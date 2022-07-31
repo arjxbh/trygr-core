@@ -1,0 +1,16 @@
+{
+  "name": "kasa",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ring-client-api": "^11.0.7",
+    "tplink-smarthome-api": "^4.2.0",
+    "tuyapi": "github:codetheweb/tuyapi"
+  }
+}

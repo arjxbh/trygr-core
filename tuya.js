@@ -1,0 +1,2 @@
+const TuyAPI = require('tyuapi');
+
