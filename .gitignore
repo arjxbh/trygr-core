@@ -7,7 +7,7 @@ yarn-error.log*
 lerna-debug.log*
 
 # ENV
-app/config/env.ts
+
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
