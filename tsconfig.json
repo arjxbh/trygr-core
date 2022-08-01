@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "target": "ESNEXT",
+        "module": "commonjs",
+        "allowSyntheticDefaultImports": true,
+        "outDir": "./dist",
+        "removeComments": true,
+        "resolveJsonModule": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "experimentalDecorators": true,
+        "typeRoots": [
+            "./node_modules/@types",
+            "./src/types"
+        ],
+        "types": [
+            "node"
+        ],
+        "esModuleInterop": true
+    },
+    "include": [
+        "src"
+    ]
+}
