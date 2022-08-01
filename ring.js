@@ -7,11 +7,25 @@ const doit = async () => {
       
       const locations = await ringApi.getLocations()
       
-      console.log(locations);
+      // console.log(locations);
 
       const devices = await locations[0].getDevices();
 
-      console.log(devices);
+      devices.forEach(d => {
+        const { deviceType, faulted, name } = d.initialData;
+        console.log('@@@@ DEVICE @@@@@@');
+        console.log({ deviceType, faulted, name });
+
+        if (deviceType.includes('hub')) {
+          console.log(`subscribing to ${name}`);
+          d.onData.subscribe(data => {console.log('GOT UPDATE FOR BASE STATION!'); console.log(data)});
+        }
+
+        if (name === 'Rear Sliding Door') {
+          console.log(d);
+          d.onData.subscribe(data => {console.log('GOT UPDATE FOR SLIDING DOOR!'); console.log(data)});
+        }
+      })
 }
 
 doit();
