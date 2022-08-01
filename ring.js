@@ -8,8 +8,6 @@ const doit = async () => {
       
       const locations = await ringApi.getLocations()
       
-      // console.log(locations);
-
       const devices = await locations[0].getDevices();
 
       devices.forEach(d => {
