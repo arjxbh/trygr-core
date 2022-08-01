@@ -1,5 +1,5 @@
 const { RingApi } = require('ring-client-api');
-const { RING_REFRESH_TOKEN } = require('./app/config/env.ts');
+const { RING_REFRESH_TOKEN } = require('./src/config/env.ts');
 
 const doit = async () => {
     const ringApi = new RingApi({
