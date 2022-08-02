@@ -1,4 +1,3 @@
-// automation definitions go here
-module.exports = {
-    
-}
+const triggers = {};
+const actions = {};
+export { triggers, actions };
