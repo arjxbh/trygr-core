@@ -21,4 +21,5 @@ export interface device {
   brightness?: number;
   volume?: number;
   vendor: string;
+  type: string;
 }

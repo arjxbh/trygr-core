@@ -1,4 +1,4 @@
-import { RingApi, RingDevice } from 'ring-client-api';
+import { RingApi, RingDevice, Location } from 'ring-client-api';
 import { device } from '../interfaces';
 
 export class RingWrapper {
@@ -21,6 +21,7 @@ export class RingWrapper {
     return {
       name,
       id: zid,
+      type: deviceType,
       status: faulted ? 'fault' : 'normal',
       onACPower: acStatus === 'ok' ? true : false,
       hasBrightness: false, // TODO: make better
@@ -30,15 +31,16 @@ export class RingWrapper {
   }
 
   async getDevices(): Promise<device[]> {
-    return await this.getDevicesByLocationIndex(0);
-  }
-
-  getDevicesByLocationId(locationId: string) {
-
-  }
-
-  async getDevicesByLocationIndex(locationIndex: number): Promise<device[]> {
     const locations = await this.#getLocations();
+    return await this.getDevicesByLocationIndex(0, locations);
+  }
+
+  async getDevicesByLocationId(locationId: string): Promise<device[]> {
+    const locations = await this.#getLocations();
+    return await this.getDevicesByLocationIndex(0, locations.filter(l => l.locationId === locationId));
+  }
+
+  async getDevicesByLocationIndex(locationIndex: number, locations: Location[]): Promise<device[]> {
     const devices = await locations[locationIndex].getDevices();
     return devices.map(d => this.#formatDeviceResponse(d));
   }
