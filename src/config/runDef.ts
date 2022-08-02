@@ -1,15 +1,4 @@
-interface action {
-  targetId: string;
-  startTime: string;
-  endTime: string;
-  doAction: () => void;
-}
-
-interface trigger {
-  startCondition: () => boolean;
-  targetId: string;
-  action: action[];
-}
+import { trigger } from '../interfaces'; 
 
 const triggers: trigger[] = [];
 export { triggers };
