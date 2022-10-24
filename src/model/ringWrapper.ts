@@ -22,11 +22,13 @@ export class RingWrapper {
       name,
       id: zid,
       type: deviceType,
-      status: faulted ? 'fault' : 'normal',
+      status: faulted ? 'fault' : 'normal', // TODO: add support for motion sensors
       onACPower: acStatus === 'ok' ? true : false,
       hasBrightness: false, // TODO: make better
       hasVolume: false, // TODO: make better
       vendor: this.vendor,
+      onTime: 0, // I don't think ring supports this value -- should this be optional?
+      lastUpdated: Date.now(),
     }
   }
 

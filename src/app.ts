@@ -1,4 +1,5 @@
-import ENV from './config/env';
-import runDef from './config/runDef';
+import { RING_REFRESH_TOKEN } from './config/env';
+import { triggers } from './config/runDef';
+import { KasaWrapper } from './model/tpLinkWrapper';
 
-console.log('something happened');
+const kasa = new KasaWrapper();

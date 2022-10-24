@@ -22,4 +22,6 @@ export interface device {
   volume?: number;
   vendor: string;
   type: string;
+  onTime: number;
+  lastUpdated: number;
 }
