@@ -37,6 +37,10 @@ export class RingWrapper {
     return await this.getDevicesByLocationIndex(0, locations);
   }
 
+  // maybe refactor this to do getDevices() on constructor, and then subscribe to each device
+  // once that's done, use a similar #updateDeviceState mechanism to kasa, and keep a hash map
+  // of devices.  subscribe using device.onData.subscribe((data)=>{ handle data; })
+
   async getDevicesByLocationId(locationId: string): Promise<device[]> {
     const locations = await this.#getLocations();
     return await this.getDevicesByLocationIndex(0, locations.filter(l => l.locationId === locationId));
