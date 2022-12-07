@@ -1,8 +1,3 @@
-/***
- * curl "https://app.zipcodebase.com/api/v1/search?codes=10005,10006" \
-    -H "apikey: {apikey}"
- */
-
 import axios from 'axios';
 
 const ZIPCODEBASE_URL = 'https://app.zipcodebase.com/api/v1/search';

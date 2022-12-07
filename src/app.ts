@@ -3,6 +3,7 @@ import { triggers } from './config/runDef';
 import { RingWrapper } from './model/ringWrapper';
 import { KasaWrapper } from './model/tpLinkWrapper';
 import { ZipCodeProxy } from './model/zipCodeProxy';
+import { WeatherProxy } from './model/weatherProxy';
 
 const doTheThing = async () => {
     // const ring = new RingWrapper(RING_REFRESH_TOKEN);
@@ -15,6 +16,12 @@ const doTheThing = async () => {
     const details = await ZipCodeBase.getDetails(ZIP_CODE);
 
     console.log(details);
+
+    const Weather = new WeatherProxy({});
+
+    const weatherInfo = await Weather.getDetails(details.latitude, details.longitude);
+
+    console.log(weatherInfo);
 }
 
 doTheThing();
