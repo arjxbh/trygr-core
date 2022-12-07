@@ -1,6 +1,24 @@
 # ring-link
 home automation experimentation
 
+project names:
+sinkro
+sychro
+sincrow
+
+integrate
+accrd
+cnslidate
+combyne
+
+fuse
+amalgamate
+
+coalesce
+
+koulesse
+
+
 ## ring api key required
 
 from: https://github.com/dgreif/ring/wiki/Refresh-Tokens#refresh-token-expiration
