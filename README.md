@@ -18,6 +18,10 @@ coalesce
 
 koulesse
 
+coalesceomatic
+
+fuse.ly
+
 
 ## ring api key required
 

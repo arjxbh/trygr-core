@@ -4,13 +4,15 @@ import { RingWrapper } from './model/ringWrapper';
 import { KasaWrapper } from './model/tpLinkWrapper';
 import { ZipCodeProxy } from './model/zipCodeProxy';
 import { WeatherProxy } from './model/weatherProxy';
+import { DeviceRepo } from './model/deviceRepository';
 
 const doTheThing = async () => {
     // const ring = new RingWrapper(RING_REFRESH_TOKEN);
 
     // console.log(await ring.getDevices());
 
-    const kasa = new KasaWrapper();
+    const cache = new DeviceRepo(); // TODO: think about naming here
+    const kasa = new KasaWrapper((d) => cache.updateDevice(d));
     // const ZipCodeBase = new ZipCodeProxy(ZIPCODEBASE_API_KEY, COUNTRY_CODE);
 
     // const details = await ZipCodeBase.getDetails(ZIP_CODE);

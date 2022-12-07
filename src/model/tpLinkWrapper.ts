@@ -37,12 +37,15 @@ interface KasaDevice {
     }
 }
 
+interface ExternalDeviceCache { (device: device): Promise<any> }
+
 export class KasaWrapper {
     vendor: string;
     api: Client;
     devices: { [key: string]: device };
+    cacheDevice: ExternalDeviceCache;
 
-    constructor () {
+    constructor (updateDevice: ExternalDeviceCache) {
 
         // This is needed because this library throws uncatchable errors if an unexpected device type exists
         // Probably cameras cause this issue?
@@ -56,6 +59,7 @@ export class KasaWrapper {
         this.vendor='kasa';
         this.api = new Client();
         this.devices = {};
+        this.cacheDevice = updateDevice;
 
         this.api.startDiscovery()
         .on('plug-online', device => {
@@ -85,6 +89,7 @@ export class KasaWrapper {
         console.log(`updating device: ${device.name}`) // TODO: use logger
         this.devices[device.id] = device;
         console.log(`tracking ${Object.keys(this.devices).length} devices`);
+        this.cacheDevice(device);
     }
 
     async handleDeviceEvent(device: KasaDevice) {
