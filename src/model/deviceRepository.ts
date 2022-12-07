@@ -1,25 +1,31 @@
 import { device } from '../interfaces';
+import Redis from 'ioredis';
+import { logger } from '../service/loggingService';
 
 export class DeviceRepo {
-    cache: any; // todo replace with redis instance
+  cache: Redis;
 
-    constructor() {
+  constructor() {
+    this.cache = new Redis();
+  }
 
-    }
+  async updateDevice(device: device) {
+    const payload = JSON.stringify(device);
+    logger.info(`Updating device ${device.id} with ${payload}`);
+    return await this.cache.set(device.id, payload);
+  }
 
-    async updateDevice(device: device) {
-        // add or update device in redis
-    }
+  async addDevice(device: device) {
+    return await this.updateDevice(device);
+  }
 
-    async addDevice(device: device) {
-        return await this.updateDevice(device);
-    }
+  async getDeviceById(deviceId: device['id']) {
+    logger.info(`getting device details for ${deviceId}`);
+    const payload = await this.cache.get(deviceId);
+    return JSON.parse(payload || '');
+  }
 
-    async getDeviceById(deviceId: device['id']) {
-
-    }
-
-    async getDeviceByName(name: device['name']) {
-        
-    }
+  async getDeviceByName(name: device['name']) {
+    // TODO: implement this
+  }
 }

@@ -13,6 +13,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "ioredis": "^5.2.4",
+    "redis-json": "^6.0.3",
     "ring-client-api": "^11.0.7",
     "tplink-smarthome-api": "^4.2.0",
     "tuyapi": "github:codetheweb/tuyapi"

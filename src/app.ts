@@ -10,18 +10,18 @@ const doTheThing = async () => {
 
     // console.log(await ring.getDevices());
 
-    // const kasa = new KasaWrapper();
-    const ZipCodeBase = new ZipCodeProxy(ZIPCODEBASE_API_KEY, COUNTRY_CODE);
+    const kasa = new KasaWrapper();
+    // const ZipCodeBase = new ZipCodeProxy(ZIPCODEBASE_API_KEY, COUNTRY_CODE);
 
-    const details = await ZipCodeBase.getDetails(ZIP_CODE);
+    // const details = await ZipCodeBase.getDetails(ZIP_CODE);
 
-    console.log(details);
+    // console.log(details);
 
-    const Weather = new WeatherProxy({});
+    // const Weather = new WeatherProxy({});
 
-    const weatherInfo = await Weather.getDetails(details.latitude, details.longitude);
+    // const weatherInfo = await Weather.getDetails(details.latitude, details.longitude);
 
-    console.log(weatherInfo);
+    // console.log(weatherInfo);
 }
 
 doTheThing();
