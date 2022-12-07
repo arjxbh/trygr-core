@@ -17,7 +17,7 @@ export class ZipCodeProxy {
       const res = await axios.get(
          `${ZIPCODEBASE_URL}?codes=${zipCode}`,
          { headers: { apiKey: this.apiKey } },
-      )
+      );
 
       return res.data.results[zipCode].find((r: any) => r.country_code === this.countryCode);
    }
