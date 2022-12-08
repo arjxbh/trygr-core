@@ -1,22 +1,41 @@
-import { RingApi, RingDevice, Location } from 'ring-client-api';
-import { device } from '../interfaces';
+import { RingApi, RingDevice, RingDeviceData, Location } from 'ring-client-api';
+import { device, ExternalDeviceCache } from '../interfaces';
 
 export class RingWrapper {
   api: RingApi;
   vendor: string;
+  cacheDevice: ExternalDeviceCache;
 
-  constructor (refreshToken: string) {
+  constructor (refreshToken: string, updateDevice: ExternalDeviceCache) {
     this.vendor='ring';
     this.api = new RingApi({ refreshToken });
+    this.cacheDevice = updateDevice;
+
+    this.#subscribeAll();
+  }
+
+  // TODO: make this more better with DRY
+  async #subscribeAll() {
+    const locations = await this.api.getLocations();
+    const devices = await locations[0].getDevices();
+
+    devices.forEach(d => {
+      d.onData.subscribe(data => {
+        console.log(`updatig device: ${data.name}`);
+        this.cacheDevice(this.#formatDeviceResponse(data));
+      })
+    })
   }
 
   async #getLocations() {
     return await this.api.getLocations();
+
   }
 
-  #formatDeviceResponse (device: RingDevice): device {
+  #formatDeviceResponse (device: RingDevice|RingDeviceData): device {
     const { deviceType, name, zid } = device;
-    const { faulted, acStatus } = device.data;
+    //@ts-ignore
+    const { faulted, acStatus } = typeof device.data !== "undefined" ? device.data : device;
 
     return {
       name,

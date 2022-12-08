@@ -25,3 +25,7 @@ export interface device {
   onTime: number;
   lastUpdated: number;
 }
+
+export interface ExternalDeviceCache {
+  (device: device): Promise<any>;
+}

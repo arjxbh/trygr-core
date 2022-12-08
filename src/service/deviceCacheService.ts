@@ -1,12 +1,12 @@
 import { device } from '../interfaces';
 import Redis from 'ioredis';
-import { logger } from '../service/loggingService';
+import { logger } from './loggingService';
 
 // TODO: should this be move to a service?
 
 // TODO: should devices expire after an hour? 30 minutes? less?
 
-export class DeviceRepo {
+export class DeviceCacheService {
   cache: Redis;
 
   constructor() {
