@@ -16,6 +16,7 @@ export class DeviceCacheService {
   async updateDevice(device: device) {
     const payload = JSON.stringify(device);
     logger.info(`Updating device ${device.id} with ${payload}`);
+    // TODO: do trigger here??
     return await this.cache.set(device.id, payload);
   }
 

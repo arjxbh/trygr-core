@@ -22,6 +22,13 @@ coalesceomatic
 
 fuse.ly
 
+trigger
+trgr
+trygr
+home trigger
+homeTrygr
+omTrygr
+
 
 ## ring api key required
 

@@ -1,39 +1,91 @@
+const { MongoClient } = require('mongodb');
+
 // TODO: move to interfaces file when ready
-interface trigger {
-    id: string; // identifier for trigger
-    affectedDeviceId: string; // device related to this trigger
-    sourceDeviceId?: string; // trigger based on state of different device
-    sourceDeviceState?: string; // required state of source device
-    absoluteStartTime?: number; // time trigger start
-    relativeStart?: string; // special string -- sunrise, sunset?
-    interval?: number; // used to calculate the total trigger run time
-    minTemp?: number; // min temperature for trigger
-    maxTemp?: number; // max temp for trigger
-    action: string; // action to be performed
-    chainDeviceId?: string; // next trigger to perform when this is complete
+interface Trigger {
+  id: string; // identifier for trigger
+  lastTriggered: number;
+  affectedDeviceId: string; // device related to this trigger
+  triggerType: string; // device | absoluteTime | relativeTime | minTemp | maxTemp
+  triggerValue: string | number; // number or device id related to trigger type
+  triggerOffset?: number; // used for relative time
+  action: string; // action to be performed
+  chainDeviceId?: string; // next trigger to perform when this is complete
 }
 
+// TODO: move to config / env
+const dbHost = 'localhost';
+const dbPort = 27017;
+const dbName = 'triggerDb';
+const collectionName = 'triggers';
+
 export class triggerService {
-    db: any; // todo replace with mongo instance
+  db: typeof MongoClient.db;
+  collection: typeof this.db.collection;
+  dayStart: number;
+  dayEnd: number;
 
-    constructor() {
-        // create connection to mongo, store to this
-    }
+  constructor() {
+    this.dayStart = 0;
+    this.dayEnd = 0;
+    this.#setDayLimits();
+    this.#connect();
+  }
 
-    // store new trigger to db
-    createTrigger() {
+  // note: setHours(...) uses the current timezone 
+  #setDayLimits = () => {
+    const start = new Date;
+    start.setHours(0, 0, 0, 0);
+    this.dayStart = Math.floor(start.getTime() / 1000);
 
-    }
+    const end = new Date;
+    end.setHours(24, 0, 0, 0);
+    this.dayEnd = Math.floor(end.getTime() / 1000);
+  }
 
-    getTriggersByTime() {
+  #connect = async () => {
+    const client = new MongoClient(`mongodb://${dbHost}:${dbPort}`);
+    await client.connect();
+    this.db = client.db(dbName);
+    this.collection = this.db.collection(collectionName);
+  };
 
-    }
+  // store new trigger to db
+  // TODO: add error handling, input validation
+  createTrigger = async (trigger: Trigger) => {
+    const res = await this.collection.insertMany([trigger]);
+    console.log(res);
+  }
 
-    getTriggersByTemperature() {
+  getTriggersByTime() {}
 
-    }
+  // This only applies to time related and any triggers that can ONLY trigger once a day 
+  // 🤔
+  #filterTriggered = (triggers: Trigger[]) => {
+    this.#setDayLimits;
+    return triggers.filter((t: Trigger) => {
+        if (t.lastTriggered > this.dayStart) return false;
+        return true;
+    })
+  }
 
-    getTriggersBySourceDevice() {
-        
-    }
+  // TODO: optimize this by doing logic in query
+  triggerByTemperature = async (temperature: number) => {
+    const matches = await this.collection.find({ triggerType: { $in: ['minTemp', 'maxTemp' ]}})
+    const hits = matches.filter((t: Trigger) => {
+        const { triggerType, triggerValue } = t;
+
+        switch(triggerType) {
+            case 'minTemp':
+                return triggerValue <= temperature;
+            case 'maxTemp':
+                return triggerValue >= temperature;
+        }
+
+        return false;
+    })
+
+    // TODO: think about how to apply the action to the hits
+  }
+
+  getTriggersBySourceDevice() {}
 }
