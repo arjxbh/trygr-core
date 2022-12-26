@@ -26,6 +26,7 @@ export class triggerService {
   dayEnd: number;
   deviceCache: DeviceCacheService;
   wrappers: any[];
+  vendorMap: any; // TODO: interface
 
   // TODO: fix ts for wrappers.  Wrappers should extend a base class,
   // and TS should be an array of instances of the wrapper base class?
@@ -92,8 +93,9 @@ export class triggerService {
     })
 
     hits.forEach(async (hit: Trigger) => {
-      const { vendor } = await this.deviceCache.getDeviceById(hit.affectedDeviceId);
-
+      const device = await this.deviceCache.getDeviceById(hit.affectedDeviceId);
+      const wrapper = this.wrappers.find((wrapper: any) => wrapper.vendor === device.vendor);
+      wrapper.performDeviceAction(device, hit.action);
     })
 
     // TODO: think about how to apply the action to the hits
