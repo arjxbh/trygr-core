@@ -21,7 +21,7 @@ export class RingWrapper {
 
     devices.forEach(d => {
       d.onData.subscribe(data => {
-        console.log(`updatig device: ${data.name}`);
+        console.log(`updating device: ${data.name}`);
         this.cacheDevice(this.#formatDeviceResponse(data));
       })
     })

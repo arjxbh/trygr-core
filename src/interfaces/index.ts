@@ -24,6 +24,8 @@ export interface device {
   type: string;
   onTime: number;
   lastUpdated: number;
+  ip?: string; // TODO: should this be more generic and just networkAddress or address?
+  port?: number;
 }
 
 export interface ExternalDeviceCache {

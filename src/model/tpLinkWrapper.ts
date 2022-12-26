@@ -8,6 +8,8 @@ interface PreferredState {
 
 // TODO: try to integrate this with existing type
 interface KasaDevice {
+  host: string; // IP address
+  port: number;
   _sysInfo: {
     sw_ver: string;
     hw_ver: string;
@@ -67,11 +69,17 @@ export class KasaWrapper {
     });
   }
 
-  #formatDeviceResponse(device: KasaDevice['_sysInfo']): device {
+  #formatDeviceResponse(
+    device: KasaDevice['_sysInfo'],
+    ip: string,
+    port: number,
+  ): device {
     const { alias, deviceId, dev_name, relay_state, brightness, on_time } =
       device;
 
     return {
+      ip,
+      port,
       name: alias,
       id: deviceId,
       type: dev_name,
@@ -94,6 +102,14 @@ export class KasaWrapper {
   }
 
   async handleDeviceEvent(device: KasaDevice) {
-    this.#updateDeviceState(this.#formatDeviceResponse(device._sysInfo));
+    this.#updateDeviceState(
+      this.#formatDeviceResponse(device._sysInfo, device.host, device.port),
+    );
+  }
+
+  // TODO: be more specific about what actions can be
+  async performDeviceAction(device: device, action: string) {
+    // switch statement of  actions
+    // client.getDevice({host: host}).then((device) => action)
   }
 }

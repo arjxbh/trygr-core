@@ -1,4 +1,5 @@
 const { MongoClient } = require('mongodb');
+import { DeviceCacheService } from '../service/deviceCacheService';
 
 // TODO: move to interfaces file when ready
 interface Trigger {
@@ -23,12 +24,18 @@ export class triggerService {
   collection: typeof this.db.collection;
   dayStart: number;
   dayEnd: number;
+  deviceCache: DeviceCacheService;
+  wrappers: any[];
 
-  constructor() {
+  // TODO: fix ts for wrappers.  Wrappers should extend a base class,
+  // and TS should be an array of instances of the wrapper base class?
+  constructor(deviceCache: DeviceCacheService, wrappers: any[]) {
     this.dayStart = 0;
     this.dayEnd = 0;
     this.#setDayLimits();
     this.#connect();
+    this.deviceCache = deviceCache;
+    this.wrappers = wrappers;
   }
 
   // note: setHours(...) uses the current timezone 
@@ -84,7 +91,16 @@ export class triggerService {
         return false;
     })
 
+    hits.forEach(async (hit: Trigger) => {
+      const { vendor } = await this.deviceCache.getDeviceById(hit.affectedDeviceId);
+
+    })
+
     // TODO: think about how to apply the action to the hits
+    // return list of hits
+    // look up device id in hits in device cache to get vendor
+    // have mapping table from vendor to wrapper
+    // call action in wrapper
   }
 
   getTriggersBySourceDevice() {}

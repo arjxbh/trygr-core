@@ -11,7 +11,7 @@ const doTheThing = async () => {
     // console.log(await ring.getDevices());
 
     const cache = new DeviceCacheService();
-    const ring = new RingWrapper(RING_REFRESH_TOKEN, (d) => cache.updateDevice(d));
+    // const ring = new RingWrapper(RING_REFRESH_TOKEN, (d) => cache.updateDevice(d));
     const kasa = new KasaWrapper((d) => cache.updateDevice(d));
     // const ZipCodeBase = new ZipCodeProxy(ZIPCODEBASE_API_KEY, COUNTRY_CODE);
 
