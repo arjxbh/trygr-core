@@ -19,7 +19,7 @@ const dbPort = 27017;
 const dbName = 'triggerDb';
 const collectionName = 'triggers';
 
-export class triggerService {
+export class TriggerService {
   db: typeof MongoClient.db;
   collection: typeof this.db.collection;
   dayStart: number;
@@ -53,13 +53,14 @@ export class triggerService {
   #connect = async () => {
     const client = new MongoClient(`mongodb://${dbHost}:${dbPort}`);
     await client.connect();
-    this.db = client.db(dbName);
-    this.collection = this.db.collection(collectionName);
+    this.db = await client.db(dbName);
+    this.collection = await this.db.collection(collectionName);
   };
 
   // store new trigger to db
   // TODO: add error handling, input validation
   createTrigger = async (trigger: Trigger) => {
+    // TODO: should the trigger service handle creating unique trigger ids?
     const res = await this.collection.insertMany([trigger]);
     console.log(res);
   }
@@ -73,6 +74,17 @@ export class triggerService {
     return triggers.filter((t: Trigger) => {
         if (t.lastTriggered > this.dayStart) return false;
         return true;
+    })
+  }
+
+  #handleHitActions = (hits: Trigger[]) => {
+    hits.forEach(async (hit: Trigger) => {
+      const device = await this.deviceCache.getDeviceById(hit.affectedDeviceId);
+      console.log(`Performing trigger for device:`);
+      console.log(device);
+      const wrapper = this.wrappers.find((wrapper: any) => wrapper.vendor === device.vendor);
+      console.log(`device belongs to ${wrapper.vendor}`);
+      wrapper.performDeviceAction(device, hit.action);
     })
   }
 
@@ -92,11 +104,7 @@ export class triggerService {
         return false;
     })
 
-    hits.forEach(async (hit: Trigger) => {
-      const device = await this.deviceCache.getDeviceById(hit.affectedDeviceId);
-      const wrapper = this.wrappers.find((wrapper: any) => wrapper.vendor === device.vendor);
-      wrapper.performDeviceAction(device, hit.action);
-    })
+    this.#handleHitActions(hits);
 
     // TODO: think about how to apply the action to the hits
     // return list of hits

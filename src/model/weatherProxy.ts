@@ -26,10 +26,10 @@ export class WeatherProxy {
     this.temperatureUnit = units.temperatureUnit || 'fahrenheit';
     this.windspeedUnit = units.windspeedUnit || 'mph';
     this.precipitationUnit = units.precipitationUnit || 'inch';
-    this.timezone = units.timezone || 'America/New_York';
+    this.timezone = units.timezone || 'America%2FNew_York';
   }
 
-  // TODO: add error handling
+  // TODO: improve error handling
   getDetails = async (latitude: string, longitude: string) => {
     const url = `${WEATHER_BASE_URL}?latitude=${latitude.substring(
       0,
@@ -41,9 +41,13 @@ export class WeatherProxy {
       this.temperatureUnit
     }&windspeed_unit=${this.windspeedUnit}&percipitation_unit=${
       this.precipitationUnit
-    }&timezone=${this.timezone}`;
+    }&timezone=${this.timezone}&daily=sunrise,sunset`;
 
-    const res = await axios.get(url);
-    return res.data;
+    try {
+      const res = await axios.get(url);
+      return res.data;
+    } catch (e) {
+      console.log(e);
+    }
   };
 }
