@@ -6,6 +6,7 @@ import { ZipCodeProxy } from './model/zipCodeProxy';
 import { WeatherProxy } from './model/weatherProxy';
 import { DeviceCacheService } from './service/deviceCacheService';
 import { TriggerService } from './service/triggerService';
+import { LocationCacheService } from './service/locationCacheService';
 
 const doTheThing = async () => {
 
@@ -21,20 +22,43 @@ const doTheThing = async () => {
 
     console.log(details);
 
-    const Weather = new WeatherProxy({});
+    const weather = new WeatherProxy({});
 
-    const weatherInfo = await Weather.getDetails(details.latitude, details.longitude);
+    const locationCache = new LocationCacheService();
 
-    console.log(weatherInfo);
+    setInterval(async (locationDetails: any, weather: WeatherProxy, locationCache: LocationCacheService) => {
+        const { postal_code, latitude, longitude, city, state, country_code } = locationDetails;
 
-    // triggers.createTrigger({
-    //     id: 'trigger01',
-    //     lastTriggered: 0,
-    //     affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
-    //     triggerType: 'minTemp',
-    //     triggerValue: 35,
-    //     action: 'turnOn',
-    // })
+        const weatherInfo = await weather.getDetails(latitude, longitude);
+        const cacheUpdate = {
+            latitude,
+            longitude,
+            city,
+            state,
+            postalCode: postal_code,
+            countryCode: country_code,
+            utcOffsetSeconds: weatherInfo.utc_offset_seconds,
+            sunrise: locationCache.convertTimeToUnix(weatherInfo.daily.sunrise[0]),
+            sunset: locationCache.convertTimeToUnix(weatherInfo.daily.sunset[0]),
+            currentWeather: {
+                temperature: weatherInfo.current_weather.temperature,
+                windspeed: weatherInfo.current_weather.windspeed,
+            },
+        }
+
+        console.log(cacheUpdate);
+
+        locationCache.updateLocation(cacheUpdate);
+    }, 60000, details, weather, locationCache);
+
+    triggers.createTrigger({
+        id: 'trigger01',
+        lastTriggered: 0,
+        affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
+        triggerType: 'minTemp',
+        triggerValue: 35,
+        action: 'turnOn',
+    })
 }
 
 doTheThing();

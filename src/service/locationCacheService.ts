@@ -15,7 +15,7 @@ interface location {
         temperature: number;
         windspeed: number;
     },
-    lastUpdated: number;
+    lastUpdated?: number;
 }
 
 export class LocationCacheService {
@@ -25,11 +25,10 @@ export class LocationCacheService {
     this.cache = new Redis();
   }
 
-  convertTimeToUnix(time: string) {
-
-  }
+  convertTimeToUnix = (time: string) => Math.floor(new Date(time).getTime() / 1000);
 
   async updateLocation(location: location) {
+    location.lastUpdated = this.convertTimeToUnix('');
     const payload = JSON.stringify(location);
     logger.info(`Updating location ${location.postalCode} with ${payload}`);
     // TODO: do trigger here??
