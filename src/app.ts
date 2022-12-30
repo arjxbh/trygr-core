@@ -4,7 +4,6 @@ import {
   ZIP_CODE,
   COUNTRY_CODE,
 } from './config/env';
-import { triggers } from './config/runDef';
 import { RingWrapper } from './model/ringWrapper';
 import { KasaWrapper } from './model/tpLinkWrapper';
 import { ZipCodeProxy } from './model/zipCodeProxy';
@@ -29,7 +28,7 @@ const doTheThing = async () => {
 
   const weather = new WeatherProxy({});
 
-  const locationCache = new LocationCacheService();
+  const locationCache = new LocationCacheService(triggers);
 
   setInterval(
     async (
@@ -67,14 +66,14 @@ const doTheThing = async () => {
     locationCache,
   );
 
-//   triggers.createTrigger({
-//     id: 'trigger02',
-//     lastTriggered: 0,
-//     affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
-//     triggerType: 'maxTemp',
-//     triggerValue: 40,
-//     action: 'turnOff',
-//   });
+  //   triggers.createTrigger({
+  //     id: 'trigger02',
+  //     lastTriggered: 0,
+  //     affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
+  //     triggerType: 'maxTemp',
+  //     triggerValue: 40,
+  //     action: 'turnOff',
+  //   });
 };
 
 doTheThing();

@@ -39,16 +39,16 @@ export class TriggerService {
     this.wrappers = wrappers;
   }
 
-  // note: setHours(...) uses the current timezone 
+  // note: setHours(...) uses the current timezone
   #setDayLimits = () => {
-    const start = new Date;
+    const start = new Date();
     start.setHours(0, 0, 0, 0);
     this.dayStart = Math.floor(start.getTime() / 1000);
 
-    const end = new Date;
+    const end = new Date();
     end.setHours(24, 0, 0, 0);
     this.dayEnd = Math.floor(end.getTime() / 1000);
-  }
+  };
 
   #connect = async () => {
     const client = new MongoClient(`mongodb://${dbHost}:${dbPort}`);
@@ -63,55 +63,64 @@ export class TriggerService {
     // TODO: should the trigger service handle creating unique trigger ids?
     const res = await this.collection.insertMany([trigger]);
     console.log(res);
-  }
+  };
 
   getTriggersByTime() {}
 
-  // This only applies to time related and any triggers that can ONLY trigger once a day 
+  // This only applies to time related and any triggers that can ONLY trigger once a day
   // 🤔
   #filterTriggered = (triggers: Trigger[]) => {
     this.#setDayLimits;
     return triggers.filter((t: Trigger) => {
-        if (t.lastTriggered > this.dayStart) return false;
-        return true;
-    })
-  }
+      if (t.lastTriggered > this.dayStart) return false;
+      return true;
+    });
+  };
 
   #handleHitActions = (hits: Trigger[]) => {
     hits.forEach(async (hit: Trigger) => {
       const device = await this.deviceCache.getDeviceById(hit.affectedDeviceId);
       console.log(`Performing trigger for device:`);
       console.log(device);
-      const wrapper = this.wrappers.find((wrapper: any) => wrapper.vendor === device.vendor);
+      const wrapper = this.wrappers.find(
+        (wrapper: any) => wrapper.vendor === device.vendor,
+      );
       console.log(`device belongs to ${wrapper.vendor}`);
       wrapper.performDeviceAction(device, hit.action);
-    })
-  }
+    });
+  };
 
-  // TODO: optimize this by doing logic in query
   triggerByTemperature = async (temperature: number) => {
-    const matches = await this.collection.find({ triggerType: { $in: ['minTemp', 'maxTemp' ]}})
-    const hits = matches.filter((t: Trigger) => {
-        const { triggerType, triggerValue } = t;
+    const query = {
+      triggerType: { $in: ['minTemp', 'maxTemp'] },
+    };
 
-        switch(triggerType) {
+    try {
+      await this.collection.find(query).toArray((err: any, docs: any) => {
+        if (err) throw err;
+
+        const hits = docs.filter((t: Trigger) => {
+          const { triggerType, triggerValue } = t;
+
+          switch (triggerType) {
             case 'minTemp':
-                return triggerValue <= temperature;
+              return temperature <= triggerValue;
             case 'maxTemp':
-                return triggerValue >= temperature;
-        }
+              return temperature >= triggerValue;
+          }
 
-        return false;
-    })
+          return false;
+        });
 
-    this.#handleHitActions(hits);
+        console.log(hits);
 
-    // TODO: think about how to apply the action to the hits
-    // return list of hits
-    // look up device id in hits in device cache to get vendor
-    // have mapping table from vendor to wrapper
-    // call action in wrapper
-  }
+        this.#handleHitActions(hits);
+      });
+    } catch (e) {
+      console.log('CAUGHT QUERY ERROR');
+      console.log(e);
+    }
+  };
 
   getTriggersBySourceDevice() {}
 }

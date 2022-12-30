@@ -109,6 +109,8 @@ export class KasaWrapper {
 
   // TODO: be more specific about what actions can be
   async performDeviceAction(device: device, action: string) {
+    console.log(`requested action ${action} for`);
+    console.log(device);
     // switch statement of  actions
     // client.getDevice({host: host}).then((device) => action)
   }
