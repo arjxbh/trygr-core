@@ -1,5 +1,6 @@
 import { Client } from 'tplink-smarthome-api';
-import { device, ExternalDeviceCache } from '../interfaces';
+import { device, ExternalDeviceCache, ExternalDeviceLookup } from '../interfaces';
+import { DeviceCacheService } from '../service/deviceCacheService';
 
 interface PreferredState {
   index: number;
@@ -44,8 +45,9 @@ export class KasaWrapper {
   api: Client;
   devices: { [key: string]: device };
   cacheDevice: ExternalDeviceCache;
+  lookupDevice: ExternalDeviceLookup;
 
-  constructor(updateDevice: ExternalDeviceCache) {
+  constructor(deviceCache: DeviceCacheService) {
     // This is needed because this library throws uncatchable errors if an unexpected device type exists
     // Probably cameras cause this issue?
     process.on('uncaughtException', (err) => {
@@ -62,7 +64,8 @@ export class KasaWrapper {
     this.vendor = 'kasa';
     this.api = new Client();
     this.devices = {};
-    this.cacheDevice = updateDevice;
+    this.cacheDevice = (d) => deviceCache.updateDevice(d);
+    this.lookupDevice = (d) => deviceCache.getDeviceById(d);
 
     this.api.startDiscovery().on('plug-online', (device) => {
       this.handleDeviceEvent(device);
@@ -111,6 +114,33 @@ export class KasaWrapper {
   async performDeviceAction(device: device, action: string) {
     console.log(`requested action ${action} for`);
     console.log(device);
+    const { status, ip } = await this.lookupDevice(device.id);
+
+    switch (action) {
+      case 'turnOn':
+        if (status !== 'on') {
+          this.api.getDevice({ host: ip }).then((d) => {
+            console.log(`${device.name} | ${device.id} turn on`);
+            d.setPowerState(true);
+          });
+        } else {
+          console.log(`${device.name} | ${device.id} turn on request noOp`);
+        }
+        break;
+      case 'turnOff':
+        if (status !== 'off') {
+          this.api.getDevice({ host: ip }).then((d) => {
+            console.log(`${device.name} | ${device.id} turn off`);
+            d.setPowerState(false);
+          });
+        } else {
+          console.log(`${device.name} | ${device.id} turn off request noOp`);
+        }
+        break;
+      case 'setBrightness':
+        console.log(`Request to set brightness for ${device.name} not yet implemented`);
+        break;
+    }
     // switch statement of  actions
     // client.getDevice({host: host}).then((device) => action)
   }

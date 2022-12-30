@@ -31,3 +31,7 @@ export interface device {
 export interface ExternalDeviceCache {
   (device: device): Promise<any>;
 }
+
+export interface ExternalDeviceLookup {
+  (deviceId: string): Promise<device>;
+}

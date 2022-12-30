@@ -18,7 +18,7 @@ const doTheThing = async () => {
 
   const deviceCache = new DeviceCacheService();
   // const ring = new RingWrapper(RING_REFRESH_TOKEN, (d) => cache.updateDevice(d));
-  const kasa = new KasaWrapper((d) => deviceCache.updateDevice(d));
+  const kasa = new KasaWrapper(deviceCache);
   const triggers = new TriggerService(deviceCache, [kasa]);
   const ZipCodeBase = new ZipCodeProxy(ZIPCODEBASE_API_KEY, COUNTRY_CODE);
 
