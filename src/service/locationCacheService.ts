@@ -28,7 +28,7 @@ export class LocationCacheService {
   convertTimeToUnix = (time: string) => Math.floor(new Date(time).getTime() / 1000);
 
   async updateLocation(location: location) {
-    location.lastUpdated = this.convertTimeToUnix('');
+    location.lastUpdated = Math.floor(new Date().getTime() / 1000);
     const payload = JSON.stringify(location);
     logger.info(`Updating location ${location.postalCode} with ${payload}`);
     // TODO: do trigger here??
