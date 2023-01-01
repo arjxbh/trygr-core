@@ -13,12 +13,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "file-system-db": "^1.1.0",
     "ioredis": "^5.2.4",
-    "mongodb": "^4.13.0",
     "redis-json": "^6.0.3",
     "ring-client-api": "^11.0.7",
     "tplink-smarthome-api": "^4.2.0",
-    "tuyapi": "github:codetheweb/tuyapi"
+    "tuyapi": "github:codetheweb/tuyapi",
+    "zeropad": "^1.1.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.32.0",

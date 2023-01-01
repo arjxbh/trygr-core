@@ -1,27 +1,37 @@
-const { MongoClient } = require('mongodb');
+const FSDB = require('file-system-db');
+const zeropad = require('zeropad');
 import { DeviceCacheService } from '../service/deviceCacheService';
 
 // TODO: move to interfaces file when ready
 interface Trigger {
-  id: string; // identifier for trigger
-  lastTriggered: number;
   affectedDeviceId: string; // device related to this trigger
   triggerType: string; // device | absoluteTime | relativeTime | minTemp | maxTemp
   triggerValue: string | number; // number or device id related to trigger type
   triggerOffset?: number; // used for relative time
   action: string; // action to be performed
+  actionValue: string | number; // value associated with action
   chainDeviceId?: string; // next trigger to perform when this is complete
 }
 
-// TODO: move to config / env
-const dbHost = 'localhost';
-const dbPort = 27017;
-const dbName = 'triggerDb';
-const collectionName = 'triggers';
+interface FSDbEntry {
+  ID: string;
+  data: Trigger;
+}
 
+const dbName = 'triggerDb';
+
+/*
+ * I originally wanted to use mongodb, a tried and true system for this
+ * Unforunately, I plan to run this on a raspberry pi clone, and all older hardware of
+ * this type runs on ARMv7l CPUs, which are 32 bit.  Mongo does not support this.
+ * Because the expected size and complexity of this database is very minimal, using
+ * a much simplier json based data store will have to be sufficient.
+ *
+ * This is certainly NOT scalable, but for a system where you would expect
+ * maybe a max of 100 triggers, it's okay.
+ */
 export class TriggerService {
-  db: typeof MongoClient.db;
-  collection: typeof this.db.collection;
+  db: typeof FSDB;
   dayStart: number;
   dayEnd: number;
   deviceCache: DeviceCacheService;
@@ -51,31 +61,32 @@ export class TriggerService {
   };
 
   #connect = async () => {
-    const client = new MongoClient(`mongodb://${dbHost}:${dbPort}`);
-    await client.connect();
-    this.db = await client.db(dbName);
-    this.collection = await this.db.collection(collectionName);
+    this.db = new FSDB(`./${dbName}.json`);
   };
 
-  // store new trigger to db
-  // TODO: add error handling, input validation
+  // note: don't use . in naming, it breaks FSDB
+  #createTriggerId = (triggerType: Trigger['triggerType']) => {
+    const numEntries = this.db.all().length;
+    return `${triggerType}:${zeropad(numEntries + 1, 4)}`;
+  };
+
   createTrigger = async (trigger: Trigger) => {
-    // TODO: should the trigger service handle creating unique trigger ids?
-    const res = await this.collection.insertMany([trigger]);
-    console.log(res);
+    // TODO: add some logic to prevent duplicate triggers
+    const id = this.#createTriggerId(trigger.triggerType);
+    this.db.set(id, trigger);
   };
 
   getTriggersByTime() {}
 
   // This only applies to time related and any triggers that can ONLY trigger once a day
   // 🤔
-  #filterTriggered = (triggers: Trigger[]) => {
-    this.#setDayLimits;
-    return triggers.filter((t: Trigger) => {
-      if (t.lastTriggered > this.dayStart) return false;
-      return true;
-    });
-  };
+  // #filterTriggered = (triggers: Trigger[]) => {
+  //   this.#setDayLimits;
+  //   return triggers.filter((t: Trigger) => {
+  //     if (t.lastTriggered > this.dayStart) return false;
+  //     return true;
+  //   });
+  // };
 
   #handleHitActions = (hits: Trigger[]) => {
     hits.forEach(async (hit: Trigger) => {
@@ -90,36 +101,29 @@ export class TriggerService {
     });
   };
 
-  triggerByTemperature = async (temperature: number) => {
-    const query = {
-      triggerType: { $in: ['minTemp', 'maxTemp'] },
-    };
+  triggerByTemperature = (temperature: number) => {
+    const triggers = this.db.all();
 
-    try {
-      await this.collection.find(query).toArray((err: any, docs: any) => {
-        if (err) throw err;
+    const hits = triggers
+      .filter((entry: FSDbEntry) => {
+        const { triggerType, triggerValue } = entry.data;
 
-        const hits = docs.filter((t: Trigger) => {
-          const { triggerType, triggerValue } = t;
-
-          switch (triggerType) {
-            case 'minTemp':
-              return temperature <= triggerValue;
-            case 'maxTemp':
-              return temperature >= triggerValue;
-          }
-
-          return false;
-        });
-
-        console.log(hits);
-
-        this.#handleHitActions(hits);
+        switch (triggerType) {
+          case 'minTemp':
+            return temperature <= triggerValue;
+          case 'maxTemp':
+            return temperature >= triggerValue;
+          default:
+            return false;
+        }
+      })
+      .map((entry: FSDbEntry) => {
+        return {
+          ...entry.data,
+        };
       });
-    } catch (e) {
-      console.log('CAUGHT QUERY ERROR');
-      console.log(e);
-    }
+
+    this.#handleHitActions(hits);
   };
 
   getTriggersBySourceDevice() {}

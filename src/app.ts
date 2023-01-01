@@ -12,6 +12,8 @@ import { DeviceCacheService } from './service/deviceCacheService';
 import { TriggerService } from './service/triggerService';
 import { LocationCacheService } from './service/locationCacheService';
 
+// TODO: use message bird api to send messages on events
+
 // TODO: organize the logic in this file into a controller(s)
 const doTheThing = async () => {
   // console.log(await ring.getDevices());
@@ -66,14 +68,21 @@ const doTheThing = async () => {
     locationCache,
   );
 
-  //   triggers.createTrigger({
-  //     id: 'trigger02',
-  //     lastTriggered: 0,
-  //     affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
-  //     triggerType: 'maxTemp',
-  //     triggerValue: 40,
-  //     action: 'turnOff',
-  //   });
+    triggers.createTrigger({
+      affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
+      triggerType: 'maxTemp',
+      triggerValue: 40,
+      action: 'turnOff',
+      actionValue: 0,
+    });
+
+    triggers.createTrigger({
+      affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
+      triggerType: 'minTemp',
+      triggerValue: 35,
+      action: 'turnOn',
+      actionValue: 1,
+    });
 };
 
 doTheThing();
