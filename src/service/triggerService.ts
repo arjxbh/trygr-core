@@ -11,6 +11,7 @@ interface Trigger {
   action: string; // action to be performed
   actionValue: string | number; // value associated with action
   chainDeviceId?: string; // next trigger to perform when this is complete
+  notify: string[];
 }
 
 interface FSDbEntry {
@@ -23,9 +24,9 @@ const dbName = 'triggerDb';
 /*
  * I originally wanted to use mongodb, a tried and true system for this
  * Unforunately, I plan to run this on a raspberry pi clone, and all older hardware of
- * this type runs on ARMv7l CPUs, which are 32 bit.  Mongo does not support this.
+ * this type runs on ARMv7l CPUs, which are 32 bit.  Mongo does NOT support this.
  * Because the expected size and complexity of this database is very minimal, using
- * a much simplier json based data store will have to be sufficient.
+ * a much simpler json based data store will have to be sufficient.
  *
  * This is certainly NOT scalable, but for a system where you would expect
  * maybe a max of 100 triggers, it's okay.

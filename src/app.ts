@@ -74,6 +74,7 @@ const doTheThing = async () => {
       triggerValue: 40,
       action: 'turnOff',
       actionValue: 0,
+      notify: [],
     });
 
     triggers.createTrigger({
@@ -82,6 +83,7 @@ const doTheThing = async () => {
       triggerValue: 35,
       action: 'turnOn',
       actionValue: 1,
+      notify: [],
     });
 };
 
