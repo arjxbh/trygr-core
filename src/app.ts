@@ -32,7 +32,7 @@ const doTheThing = async () => {
   const weather = new WeatherProxy({ timezone: details.timezone });
   const locationCache = new LocationCacheService(triggers);
 
-  const api = new ApiService();
+  const api = new ApiService(triggers);
 
   setInterval(
     async (

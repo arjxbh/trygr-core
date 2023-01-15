@@ -53,6 +53,10 @@ export class TriggerService {
     this.notification = new MailService;
   }
 
+  listTriggers = () => {
+    return this.db.all();
+  }
+
   // note: setHours(...) uses the current timezone
   #setDayLimits = () => {
     const start = new Date();

@@ -1,13 +1,16 @@
 import koa from 'koa';
 import router from '@koa/router';
+import { TriggerService } from './triggerService';
 
 export class ApiService {
   app: koa;
   router: router;
+  triggers: TriggerService;
 
-  constructor(port?: number) {
+  constructor(triggers: TriggerService, port?: number) {
     this.app = new koa();
     this.router = new router();
+    this.triggers = triggers;
 
     this.#createRoutes();
 
@@ -21,7 +24,7 @@ export class ApiService {
 
   #createRoutes = () => {
     this.router.get('get-triggers', '/triggers', (ctx) => {
-      ctx.body = 'Hello World';
+      ctx.body = this.triggers.listTriggers();
     });
   };
 }
