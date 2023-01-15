@@ -11,6 +11,7 @@ import { WeatherProxy } from './model/weatherProxy';
 import { DeviceCacheService } from './service/deviceCacheService';
 import { TriggerService } from './service/triggerService';
 import { LocationCacheService } from './service/locationCacheService';
+import { ApiService } from './service/apiService';
 
 // TODO: use message bird api to send messages on events
 
@@ -29,8 +30,9 @@ const doTheThing = async () => {
   console.log(details);
 
   const weather = new WeatherProxy({ timezone: details.timezone });
-
   const locationCache = new LocationCacheService(triggers);
+
+  const api = new ApiService();
 
   setInterval(
     async (
