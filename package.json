@@ -20,9 +20,11 @@
     "ring-client-api": "^11.0.7",
     "tplink-smarthome-api": "^4.2.0",
     "tuyapi": "github:codetheweb/tuyapi",
+    "tz-lookup": "^6.1.25",
     "zeropad": "^1.1.0"
   },
   "devDependencies": {
+    "@types/tz-lookup": "^6.1.0",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "eslint": "^8.21.0",

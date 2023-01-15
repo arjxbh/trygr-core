@@ -1,6 +1,7 @@
 const FSDB = require('file-system-db');
 const zeropad = require('zeropad');
 import { DeviceCacheService } from '../service/deviceCacheService';
+import { MailService } from './mailService';
 
 // TODO: move to interfaces file when ready
 interface Trigger {
@@ -38,6 +39,7 @@ export class TriggerService {
   deviceCache: DeviceCacheService;
   wrappers: any[];
   vendorMap: any; // TODO: interface
+  notification: MailService;
 
   // TODO: fix ts for wrappers.  Wrappers should extend a base class,
   // and TS should be an array of instances of the wrapper base class?
@@ -48,6 +50,7 @@ export class TriggerService {
     this.#connect();
     this.deviceCache = deviceCache;
     this.wrappers = wrappers;
+    this.notification = new MailService;
   }
 
   // note: setHours(...) uses the current timezone
@@ -98,7 +101,11 @@ export class TriggerService {
         (wrapper: any) => wrapper.vendor === device.vendor,
       );
       console.log(`device belongs to ${wrapper.vendor}`);
-      wrapper.performDeviceAction(device, hit.action);
+      const { resultText, noOp } = wrapper.performDeviceAction(device, hit.action, hit.actionValue);
+      console.log(resultText);
+      if (!noOp && hit.notify.length) {
+        this.notification.sendNotification(hit.notify, resultText);
+      }
     });
   };
 

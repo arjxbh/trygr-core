@@ -111,37 +111,41 @@ export class KasaWrapper {
   }
 
   // TODO: be more specific about what actions can be
-  async performDeviceAction(device: device, action: string) {
+  async performDeviceAction(device: device, action: string, _actionValue: string | number) {
     console.log(`requested action ${action} for`);
     console.log(device);
     const { status, ip } = await this.lookupDevice(device.id);
+    let resultText =   `error: unexpected action ${action} for device ${device} : noOp`;
+    let noOp = true;
 
     switch (action) {
       case 'turnOn':
         if (status !== 'on') {
           this.api.getDevice({ host: ip }).then((d) => {
-            console.log(`${device.name} | ${device.id} turn on`);
+            resultText =  `${device.name} | ${device.id} turn on`;
+            noOp = false;
             d.setPowerState(true);
           });
         } else {
-          console.log(`${device.name} | ${device.id} turn on request noOp`);
+          resultText =  `${device.name} | ${device.id} turn on request noOp`;
         }
         break;
       case 'turnOff':
         if (status !== 'off') {
           this.api.getDevice({ host: ip }).then((d) => {
-            console.log(`${device.name} | ${device.id} turn off`);
+            resultText =  `${device.name} | ${device.id} turn off`;
+            noOp = false;
             d.setPowerState(false);
           });
         } else {
-          console.log(`${device.name} | ${device.id} turn off request noOp`);
+          resultText =  `${device.name} | ${device.id} turn off request noOp`;
         }
         break;
       case 'setBrightness':
-        console.log(`Request to set brightness for ${device.name} not yet implemented`);
+        resultText =  `Request to set brightness for ${device.name} not yet implemented`;
         break;
     }
-    // switch statement of  actions
-    // client.getDevice({host: host}).then((device) => action)
+
+    return { resultText, noOp }
   }
 }

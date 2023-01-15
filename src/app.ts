@@ -28,7 +28,7 @@ const doTheThing = async () => {
 
   console.log(details);
 
-  const weather = new WeatherProxy({});
+  const weather = new WeatherProxy({ timezone: details.timezone });
 
   const locationCache = new LocationCacheService(triggers);
 
@@ -74,7 +74,7 @@ const doTheThing = async () => {
       triggerValue: 40,
       action: 'turnOff',
       actionValue: 0,
-      notify: [],
+      notify: ['8622283280@tmomail.net', 'dapcwiz@gmail.com'],
     });
 
     triggers.createTrigger({
@@ -83,7 +83,7 @@ const doTheThing = async () => {
       triggerValue: 35,
       action: 'turnOn',
       actionValue: 1,
-      notify: [],
+      notify: ['8622283280@tmomail.net', 'dapcwiz@gmail.com'],
     });
 };
 

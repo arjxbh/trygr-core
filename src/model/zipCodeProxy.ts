@@ -1,4 +1,6 @@
 import axios from 'axios';
+//import * as tzlookup from 'tz-lookup';
+const tzlookup = require('tz-lookup'); // ts doesn't like "import" for this lib -- TS2497
 
 const ZIPCODEBASE_URL = 'https://app.zipcodebase.com/api/v1/search';
 
@@ -18,8 +20,13 @@ export class ZipCodeProxy {
       headers: { apiKey: this.apiKey },
     });
 
-    return res.data.results[zipCode].find(
+    let zipCodeDetails = res.data.results[zipCode].find(
       (r: any) => r.country_code === this.countryCode,
     );
+
+    zipCodeDetails.timezone = tzlookup(zipCodeDetails.latitude, zipCodeDetails.longitude);
+
+    return zipCodeDetails;
   };
 }
+ 
