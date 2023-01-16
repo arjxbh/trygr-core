@@ -70,23 +70,23 @@ const doTheThing = async () => {
     locationCache,
   );
 
-    triggers.createTrigger({
-      affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
-      triggerType: 'maxTemp',
-      triggerValue: 40,
-      action: 'turnOff',
-      actionValue: 0,
-      notify: ['8622283280@tmomail.net', 'dapcwiz@gmail.com'],
-    });
+    // triggers.createTrigger({
+    //   affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
+    //   triggerType: 'maxTemp',
+    //   triggerValue: 40,
+    //   action: 'turnOff',
+    //   actionValue: 0,
+    //   notify: ['8622283280@tmomail.net', 'dapcwiz@gmail.com'],
+    // });
 
-    triggers.createTrigger({
-      affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
-      triggerType: 'minTemp',
-      triggerValue: 35,
-      action: 'turnOn',
-      actionValue: 1,
-      notify: ['8622283280@tmomail.net', 'dapcwiz@gmail.com'],
-    });
+    // triggers.createTrigger({
+    //   affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
+    //   triggerType: 'minTemp',
+    //   triggerValue: 35,
+    //   action: 'turnOn',
+    //   actionValue: 1,
+    //   notify: ['8622283280@tmomail.net', 'dapcwiz@gmail.com'],
+    // });
 };
 
 doTheThing();

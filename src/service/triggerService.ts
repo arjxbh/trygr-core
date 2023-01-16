@@ -4,9 +4,17 @@ import { DeviceCacheService } from '../service/deviceCacheService';
 import { MailService } from './mailService';
 
 // TODO: move to interfaces file when ready
+
+type DeviceTriggerType =
+  | 'device'
+  | 'absoluteTime'
+  | 'relativeTime'
+  | 'minTemp'
+  | 'maxTemp';
+
 interface Trigger {
   affectedDeviceId: string; // device related to this trigger
-  triggerType: string; // device | absoluteTime | relativeTime | minTemp | maxTemp
+  triggerType: DeviceTriggerType;
   triggerValue: string | number; // number or device id related to trigger type
   triggerOffset?: number; // used for relative time
   action: string; // action to be performed
@@ -50,12 +58,12 @@ export class TriggerService {
     this.#connect();
     this.deviceCache = deviceCache;
     this.wrappers = wrappers;
-    this.notification = new MailService;
+    this.notification = new MailService();
   }
 
   listTriggers = () => {
     return this.db.all();
-  }
+  };
 
   // note: setHours(...) uses the current timezone
   #setDayLimits = () => {
@@ -78,10 +86,11 @@ export class TriggerService {
     return `${triggerType}:${zeropad(numEntries + 1, 4)}`;
   };
 
-  createTrigger = async (trigger: Trigger) => {
+  createTrigger = (trigger: Trigger) => {
     // TODO: add some logic to prevent duplicate triggers
     const id = this.#createTriggerId(trigger.triggerType);
     this.db.set(id, trigger);
+    return id;
   };
 
   getTriggersByTime() {}
@@ -105,7 +114,11 @@ export class TriggerService {
         (wrapper: any) => wrapper.vendor === device.vendor,
       );
       console.log(`device belongs to ${wrapper.vendor}`);
-      const { resultText, noOp } = wrapper.performDeviceAction(device, hit.action, hit.actionValue);
+      const { resultText, noOp } = wrapper.performDeviceAction(
+        device,
+        hit.action,
+        hit.actionValue,
+      );
       console.log(resultText);
       if (!noOp && hit.notify.length) {
         this.notification.sendNotification(hit.notify, resultText);
@@ -113,10 +126,10 @@ export class TriggerService {
     });
   };
 
-  triggerByTemperature = (temperature: number) => {
+  getTemperatureHits = (temperature: number) => {
     const triggers = this.db.all();
 
-    const hits = triggers
+    return triggers
       .filter((entry: FSDbEntry) => {
         const { triggerType, triggerValue } = entry.data;
 
@@ -134,7 +147,10 @@ export class TriggerService {
           ...entry.data,
         };
       });
+  };
 
+  triggerByTemperature = (temperature: number) => {
+    const hits = this.getTemperatureHits(temperature);
     this.#handleHitActions(hits);
   };
 

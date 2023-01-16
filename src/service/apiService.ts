@@ -1,6 +1,16 @@
 import koa from 'koa';
 import router from '@koa/router';
+import koaBody from 'koa-body';
 import { TriggerService } from './triggerService';
+import joi from 'joi';
+
+const triggerSchema = joi.object({
+  affectedDeviceId: joi.string().alphanum().required(),
+  triggerType: joi.string().alphanum().required(),
+  triggerValue: [joi.string().alphanum(), joi.number()],
+  action: joi.string().alphanum().required(),
+  actionValue: [joi.string().alphanum(), joi.number()],
+});
 
 export class ApiService {
   app: koa;
@@ -25,6 +35,23 @@ export class ApiService {
   #createRoutes = () => {
     this.router.get('get-triggers', '/triggers', (ctx) => {
       ctx.body = this.triggers.listTriggers();
+    });
+
+    this.router.get('get-trigger-by-temp', '/trigger/temperature/:temperature', (ctx) => {
+        const paramSchema = joi.object({ temperature: joi.number().required() });
+        const validation = paramSchema.validate(ctx.params);
+        if (validation.error) return ctx.body = validation.error;
+
+        const { temperature } = ctx.params;
+        ctx.body = this.triggers.getTemperatureHits(parseInt(temperature, 10));
+    });
+
+    this.router.post('create-trigger', '/trigger/create', koaBody(), (ctx) => {
+      const validation = triggerSchema.validate(ctx.request.body);
+      if (validation.error) return ctx.body = validation.error;
+
+      const newTriggerId = this.triggers.createTrigger(ctx.request.body);
+      ctx.body = { id: newTriggerId };
     });
   };
 }
