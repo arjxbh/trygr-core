@@ -2,6 +2,8 @@ const FSDB = require('file-system-db');
 const zeropad = require('zeropad');
 import { DeviceCacheService } from '../service/deviceCacheService';
 import { MailService } from './mailService';
+import { getLogger } from '../service/loggingService';
+import Logger from 'bunyan';
 
 // TODO: move to interfaces file when ready
 
@@ -48,10 +50,12 @@ export class TriggerService {
   wrappers: any[];
   vendorMap: any; // TODO: interface
   notification: MailService;
+  logger: Logger;
 
   // TODO: fix ts for wrappers.  Wrappers should extend a base class,
   // and TS should be an array of instances of the wrapper base class?
   constructor(deviceCache: DeviceCacheService, wrappers: any[]) {
+    this.logger = getLogger('Trigger Service');
     this.dayStart = 0;
     this.dayEnd = 0;
     this.#setDayLimits();
@@ -108,25 +112,24 @@ export class TriggerService {
   #handleHitActions = (hits: Trigger[]) => {
     hits.forEach(async (hit: Trigger) => {
       const device = await this.deviceCache.getDeviceById(hit.affectedDeviceId);
-      console.log(`Performing trigger for device:`);
-      console.log(device);
+      this.logger.info('Performing trigger for device:', device);
       const wrapper = this.wrappers.find(
         (wrapper: any) => wrapper.vendor === device.vendor,
       );
-      console.log(`device belongs to ${wrapper.vendor}`);
+      this.logger.info(`device belongs to ${wrapper.vendor}`);
       const { resultText, noOp } = wrapper.performDeviceAction(
         device,
         hit.action,
         hit.actionValue,
       );
-      console.log(resultText);
-      if (!noOp && hit.notify.length) {
+      this.logger.info(resultText);
+      if (!noOp && hit.notify && hit.notify?.length) {
         this.notification.sendNotification(hit.notify, resultText);
       }
     });
   };
 
-  getTemperatureHits = (temperature: number) => {
+  getTemperatureHits = async (temperature: number) => {
     const triggers = this.db.all();
 
     return triggers
@@ -149,8 +152,10 @@ export class TriggerService {
       });
   };
 
-  triggerByTemperature = (temperature: number) => {
-    const hits = this.getTemperatureHits(temperature);
+  triggerByTemperature = async (temperature: number) => {
+    this.logger.debug('triggering by temperature, getting hits...');
+    const hits = await this.getTemperatureHits(temperature);
+    this.logger.debug(hits);
     this.#handleHitActions(hits);
   };
 

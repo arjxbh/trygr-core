@@ -1,3 +1,5 @@
+import Logger from 'bunyan';
+import { getLogger } from '../service/loggingService';
 import { Client } from 'tplink-smarthome-api';
 import { device, ExternalDeviceCache, ExternalDeviceLookup } from '../interfaces';
 import { DeviceCacheService } from '../service/deviceCacheService';
@@ -46,8 +48,10 @@ export class KasaWrapper {
   devices: { [key: string]: device };
   cacheDevice: ExternalDeviceCache;
   lookupDevice: ExternalDeviceLookup;
+  logger: Logger;
 
   constructor(deviceCache: DeviceCacheService) {
+    this.logger = getLogger('Kasa');
     // This is needed because this library throws uncatchable errors if an unexpected device type exists
     // Probably cameras cause this issue?
     process.on('uncaughtException', (err) => {
@@ -56,8 +60,7 @@ export class KasaWrapper {
         err.message === 'Could not determine device from sysinfo'
       )
         return; //ignore invalid device crash
-      console.log('UNHANDLED EXCEPION');
-      console.log(err);
+      this.logger.error('UNHANDLED EXCEPTION', err);
       process.exit(1);
     });
 
@@ -98,9 +101,9 @@ export class KasaWrapper {
   }
 
   #updateDeviceState(device: device) {
-    console.log(`updating device: ${device.name}`); // TODO: use logger
+    this.logger.info(`updating device: ${device.name}`); // TODO: use logger
     this.devices[device.id] = device;
-    console.log(`tracking ${Object.keys(this.devices).length} devices`);
+    this.logger.debug(`tracking ${Object.keys(this.devices).length} devices`);
     this.cacheDevice(device);
   }
 
@@ -112,8 +115,8 @@ export class KasaWrapper {
 
   // TODO: be more specific about what actions can be
   async performDeviceAction(device: device, action: string, _actionValue: string | number) {
-    console.log(`requested action ${action} for`);
-    console.log(device);
+    this.logger.info(`requested action ${action} for`);
+    this.logger.info(device);
     const { status, ip } = await this.lookupDevice(device.id);
     let resultText =   `error: unexpected action ${action} for device ${device} : noOp`;
     let noOp = true;

@@ -1,14 +1,18 @@
 import axios from 'axios';
+import Logger from 'bunyan';
 //import * as tzlookup from 'tz-lookup';
 const tzlookup = require('tz-lookup'); // ts doesn't like "import" for this lib -- TS2497
+import { getLogger } from '../service/loggingService';
 
 const ZIPCODEBASE_URL = 'https://app.zipcodebase.com/api/v1/search';
 
 export class ZipCodeProxy {
   apiKey: string;
   countryCode: string;
+  logger: Logger;
 
   constructor(apiKey: string, countryCode: string) {
+    this.logger = getLogger('Zip Code Proxy');
     this.apiKey = apiKey;
     this.countryCode = countryCode;
   }
@@ -25,6 +29,8 @@ export class ZipCodeProxy {
     );
 
     zipCodeDetails.timezone = tzlookup(zipCodeDetails.latitude, zipCodeDetails.longitude);
+
+    this.logger.info(`Zip code details for ${zipCode}`, zipCodeDetails);
 
     return zipCodeDetails;
   };

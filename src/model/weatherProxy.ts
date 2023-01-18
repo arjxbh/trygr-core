@@ -4,6 +4,9 @@
  * https://api.open-meteo.com/v1/forecast?latitude=40.36&longitude=-74.24&hourly=temperature_2m,temperature_120m&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York
  */
 import axios from 'axios';
+import Logger from 'bunyan';
+import { getLogger } from '../service/loggingService';
+
 
 // TODO: make this interface more explicit
 interface WeatherUnits {
@@ -21,8 +24,11 @@ export class WeatherProxy {
   windspeedUnit: WeatherUnits['windspeedUnit'];
   precipitationUnit: WeatherUnits['precipitationUnit'];
   timezone: WeatherUnits['timezone'];
+  logger: Logger;
 
   constructor(units: WeatherUnits) {
+    this.logger = getLogger('Weather Proxy');
+
     this.temperatureUnit = units.temperatureUnit || 'fahrenheit';
     this.windspeedUnit = units.windspeedUnit || 'mph';
     this.precipitationUnit = units.precipitationUnit || 'inch';
@@ -31,6 +37,8 @@ export class WeatherProxy {
 
   // TODO: improve error handling
   getDetails = async (latitude: string, longitude: string) => {
+    this.logger.info(`Fetching weather details for ${latitude}, ${longitude} in ${this.timezone}`);
+
     const url = `${WEATHER_BASE_URL}?latitude=${latitude.substring(
       0,
       7,
@@ -47,7 +55,7 @@ export class WeatherProxy {
       const res = await axios.get(url);
       return res.data;
     } catch (e) {
-      console.log(e);
+      this.logger.error(e);
     }
   };
 }

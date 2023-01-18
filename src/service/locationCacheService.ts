@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
-import { logger } from './loggingService';
+import Logger from 'bunyan';
+import { getLogger } from './loggingService';
 import { TriggerService } from './triggerService';
 
 interface location {
@@ -24,8 +25,10 @@ interface location {
 export class LocationCacheService {
   cache: Redis;
   triggers: TriggerService;
+  logger: Logger;
 
   constructor(triggers: TriggerService) {
+    this.logger = getLogger('Location Cache');
     this.cache = new Redis();
     this.triggers = triggers;
   }
@@ -36,7 +39,9 @@ export class LocationCacheService {
   async updateLocation(location: location) {
     location.lastUpdated = Math.floor(new Date().getTime() / 1000);
     const payload = JSON.stringify(location);
-    logger.info(`Updating location ${location.postalCode} with ${payload}`);
+    this.logger.info(
+      `Updating location ${location.postalCode} with ${payload}`,
+    );
 
     this.triggers.triggerByTemperature(location.currentWeather.temperature); // fire and forget
 
@@ -44,7 +49,7 @@ export class LocationCacheService {
   }
 
   async getLocationByPostalCode(postalCode: location['postalCode']) {
-    logger.info(`getting location details for ${postalCode}`);
+    this.logger.info(`getting location details for ${postalCode}`);
     const payload = await this.cache.get(postalCode);
     return JSON.parse(payload || '');
   }

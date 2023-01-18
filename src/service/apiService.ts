@@ -1,8 +1,10 @@
 import koa from 'koa';
 import router from '@koa/router';
 import koaBody from 'koa-body';
-import { TriggerService } from './triggerService';
 import joi from 'joi';
+import Logger from 'bunyan';
+import { TriggerService } from './triggerService';
+import { getLogger } from '../service/loggingService';
 
 const triggerSchema = joi.object({
   affectedDeviceId: joi.string().alphanum().required(),
@@ -16,8 +18,10 @@ export class ApiService {
   app: koa;
   router: router;
   triggers: TriggerService;
+  logger: Logger;
 
   constructor(triggers: TriggerService, port?: number) {
+    this.logger = getLogger('API');
     this.app = new koa();
     this.router = new router();
     this.triggers = triggers;
@@ -28,7 +32,7 @@ export class ApiService {
 
     const apiPort = port || 3333;
 
-    console.log(`api listening on port ${apiPort}`);
+    this.logger.info(`api listening on port ${apiPort}`);
     this.app.listen(apiPort);
   }
 

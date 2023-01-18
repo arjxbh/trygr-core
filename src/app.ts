@@ -27,8 +27,6 @@ const doTheThing = async () => {
 
   const details = await ZipCodeBase.getDetails(ZIP_CODE);
 
-  console.log(details);
-
   const weather = new WeatherProxy({ timezone: details.timezone });
   const locationCache = new LocationCacheService(triggers);
 
@@ -60,8 +58,6 @@ const doTheThing = async () => {
         },
       };
 
-      console.log(cacheUpdate);
-
       locationCache.updateLocation(cacheUpdate);
     },
     60000,
@@ -69,24 +65,6 @@ const doTheThing = async () => {
     weather,
     locationCache,
   );
-
-    // triggers.createTrigger({
-    //   affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
-    //   triggerType: 'maxTemp',
-    //   triggerValue: 40,
-    //   action: 'turnOff',
-    //   actionValue: 0,
-    //   notify: ['8622283280@tmomail.net', 'dapcwiz@gmail.com'],
-    // });
-
-    // triggers.createTrigger({
-    //   affectedDeviceId: '80065139E8A7D9BA92405DEE56064F2F204591A8',
-    //   triggerType: 'minTemp',
-    //   triggerValue: 35,
-    //   action: 'turnOn',
-    //   actionValue: 1,
-    //   notify: ['8622283280@tmomail.net', 'dapcwiz@gmail.com'],
-    // });
 };
 
 doTheThing();

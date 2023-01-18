@@ -14,6 +14,8 @@
   "license": "ISC",
   "dependencies": {
     "@koa/router": "^10.0.0",
+    "bunyan": "^1.8.15",
+    "bunyan-format": "^0.2.1",
     "file-system-db": "^1.1.0",
     "ioredis": "^5.2.4",
     "joi": "^17.7.0",
@@ -28,6 +30,8 @@
     "zeropad": "^1.1.0"
   },
   "devDependencies": {
+    "@types/bunyan": "^1.8.8",
+    "@types/bunyan-format": "^0.2.5",
     "@types/koa": "^2.13.5",
     "@types/koa__router": "^12.0.0",
     "@types/tz-lookup": "^6.1.0",
