@@ -12,6 +12,7 @@ import { DeviceCacheService } from './service/deviceCacheService';
 import { TriggerService } from './service/triggerService';
 import { LocationCacheService } from './service/locationCacheService';
 import { ApiService } from './service/apiService';
+import { MailService } from './service/mailService';
 
 // TODO: use message bird api to send messages on events
 
@@ -31,6 +32,26 @@ const doTheThing = async () => {
   const locationCache = new LocationCacheService(triggers);
 
   const api = new ApiService(triggers);
+
+// using Twilio SendGrid's v3 Node.js Library
+// https://github.com/sendgrid/sendgrid-nodejs
+const sgMail = require('@sendgrid/mail')
+sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+const msg = {
+  to: 'arjxbh@gmail.com', // Change to your recipient
+  from: 'arjun@dapcwiz.com', // Change to your verified sender
+  subject: 'Sending with SendGrid is Fun',
+  text: 'and easy to do anywhere, even with Node.js',
+  html: '<strong>and easy to do anywhere, even with Node.js</strong>',
+}
+sgMail
+  .send(msg)
+  .then(() => {
+    console.log('Email sent')
+  })
+  .catch((error: any) => {
+    console.error(error)
+  })
 
   setInterval(
     async (

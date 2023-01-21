@@ -1,34 +1,5 @@
-# ring-link
-home automation experimentation
-
-project names:
-sinkro
-sychro
-sincrow
-
-integrate
-accrd
-cnslidate
-combyne
-
-fuse
-amalgamate
-
-coalesce
-
-koulesse
-
-coalesceomatic
-
-fuse.ly
-
-trigger
-trgr
-trygr
-home trigger
-homeTrygr
-omTrygr
-
+# trygr-core
+home automation data privacy experimentation
 
 ## ring api key required
 
