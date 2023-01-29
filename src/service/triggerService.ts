@@ -14,7 +14,7 @@ type DeviceTriggerType =
   | 'minTemp'
   | 'maxTemp';
 
-interface Trigger {
+export interface Trigger {
   affectedDeviceId: string; // device related to this trigger
   triggerType: DeviceTriggerType;
   triggerValue: string | number; // number or device id related to trigger type
@@ -96,6 +96,10 @@ export class TriggerService {
     this.db.set(id, trigger);
     return id;
   };
+
+  deleteTrigger = (triggerId: string) => {
+    this.db.delete(triggerId);
+  }
 
   getTriggersByTime() {}
 

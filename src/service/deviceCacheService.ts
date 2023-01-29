@@ -34,4 +34,8 @@ export class DeviceCacheService {
   async getDeviceByName(name: device['name']) {
     // TODO: implement this
   }
+
+  async closeConnection() {
+    this.cache.disconnect();
+  }
 }
