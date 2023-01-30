@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "./test.sh",
     "clean": "rm -rf dist",
     "build:compile": "tsc -p .",
     "build": "npm run clean && npm run build:compile",
