@@ -133,6 +133,15 @@ export class TriggerService {
     });
   };
 
+  // TODO: there is probably a better way to do this
+  #handleStringOrNumber = (value: string | number): number => {
+    if (typeof value === 'number') {
+      return value;
+    } else {
+      return parseInt(value, 10);
+    }
+  }
+
   getTemperatureHits = async (temperature: number) => {
     const triggers = this.db.all();
 
@@ -142,9 +151,9 @@ export class TriggerService {
 
         switch (triggerType) {
           case 'minTemp':
-            return temperature <= triggerValue;
+            return temperature <= this.#handleStringOrNumber(triggerValue);
           case 'maxTemp':
-            return temperature >= triggerValue;
+            return temperature >= this.#handleStringOrNumber(triggerValue);
           default:
             return false;
         }
