@@ -83,6 +83,20 @@ export class MatterWrapper {
     rmSync(socket, { force: true });
     const admin = createServer(async (req, res) => {
       try {
+        if (req.method === 'GET' && req.url === '/discover') {
+          const devices = await this.controller.discoverCommissionableDevices(
+            {},
+            { onIpNetwork: true },
+            undefined,
+            5,
+          );
+          res.end(
+            `Visible Matter devices advertising for pairing: ${
+              devices.filter((d) => d.CM !== 0).length
+            }\n`,
+          );
+          return;
+        }
         if (req.method === 'GET' && req.url === '/list') {
           res.end(JSON.stringify(await this.list(), null, 2) + '\n');
           return;
@@ -109,21 +123,65 @@ export class MatterWrapper {
           res.writeHead(409).end('Pairing in progress.\n');
           return;
         }
-        const { shortDiscriminator, passcode } =
-          ManualPairingCodeCodec.decode(body);
+        let decoded;
+        try {
+          decoded = ManualPairingCodeCodec.decode(body);
+        } catch {
+          res
+            .writeHead(400)
+            .end('Invalid manual setup code. Check the digits and checksum.\n');
+          return;
+        }
+        const { shortDiscriminator, passcode } = decoded;
         if (shortDiscriminator === undefined)
           throw Error('Missing discriminator');
         this.pairing = true;
         try {
+          const matches = (
+            await this.controller.discoverCommissionableDevices(
+              { shortDiscriminator },
+              { onIpNetwork: true },
+              undefined,
+              8,
+            )
+          ).filter((d) => d.CM !== 0);
+          if (!matches.length) {
+            res
+              .writeHead(404)
+              .end(
+                'No device advertising for pairing matched this code on the Mac network interfaces. Reopen the pairing window and retry.\n',
+              );
+            return;
+          }
+          if (matches.length > 1) {
+            res
+              .writeHead(409)
+              .end(
+                'Multiple devices match. Open the pairing window on only the target device and retry.\n',
+              );
+            return;
+          }
           const id = await this.controller.commissionNode({
             passcode,
             commissioning: {},
             discovery: {
-              identifierData: { shortDiscriminator },
+              commissionableDevice: matches[0],
               discoveryCapabilities: { onIpNetwork: true },
             },
           });
           res.end(`Paired node ${id}.\n`);
+        } catch (error) {
+          // SDK messages may include commissioning data. Only expose the error class.
+          const kind =
+            error instanceof Error &&
+            /^[A-Za-z]+Error$/.test(error.constructor.name)
+              ? error.constructor.name
+              : 'Error';
+          res
+            .writeHead(502)
+            .end(
+              `Matter discovery or commissioning failed (${kind}). Check the pairing window and run matter.sh discover.\n`,
+            );
         } finally {
           this.pairing = false;
         }
