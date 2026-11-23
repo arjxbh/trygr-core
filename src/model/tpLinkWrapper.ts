@@ -31,6 +31,7 @@ function broadcastTargets() {
 export class KasaWrapper {
   readonly vendor = 'kasa';
   private readonly api = new Client();
+  private readonly destinations = broadcastTargets();
   private python =
     process.env.TRYGR_KASA_PYTHON ||
     join(homedir(), '.local/share/trygr/kasa-env/bin/python');
@@ -66,6 +67,11 @@ export class KasaWrapper {
           onACPower: true,
           onTime: 0,
         });
+      if (result.failed_networks)
+        console.warn(
+          'Kasa discovery networks unavailable:',
+          result.failed_networks,
+        );
       if (result.locked)
         console.warn(
           'Kasa devices requiring account credentials:',
@@ -88,10 +94,18 @@ export class KasaWrapper {
     };
     this.api.on('device-new', record).on('device-online', record);
     this.api.startDiscovery({
-      devices: broadcastTargets(),
+      devices: this.destinations,
       filterCallback: (s) => isPlugSysinfo(s) || isBulbSysinfo(s),
       breakoutChildren: true,
     });
+    // The SDK reads this same list for each UDP discovery round.
+    setInterval(() => {
+      this.destinations.splice(
+        0,
+        this.destinations.length,
+        ...broadcastTargets(),
+      );
+    }, 30000).unref();
   }
   private describe(unit: Plug | Bulb): device {
     const bulb = unit instanceof Bulb;

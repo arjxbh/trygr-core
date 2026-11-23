@@ -48,7 +48,8 @@ export class DeviceCacheService {
         }
         if (
           row?.vendor === 'kasa' &&
-          row.name === name &&
+          typeof row.name === 'string' &&
+          row.name.trim().toLowerCase() === name.trim().toLowerCase() &&
           Date.now() - row.lastUpdated < 180000
         )
           matches.set(row.id, row);

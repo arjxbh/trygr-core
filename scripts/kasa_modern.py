@@ -4,7 +4,7 @@ import json
 import os
 import sys
 
-from kasa import Credentials, Discover, SmartDevice
+from kasa import Credentials, Discover
 from kasa.exceptions import AuthenticationError
 
 
@@ -16,12 +16,15 @@ async def main():
     if command == "scan":
         records = []
         locked = set()
+        failed_networks = 0
         for broadcast in args:
-            devices = await Discover.discover(target=broadcast, credentials=auth, discovery_timeout=3)
+            try:
+                devices = await Discover.discover(target=broadcast, credentials=auth, discovery_timeout=3)
+            except (OSError, asyncio.TimeoutError):
+                failed_networks += 1
+                continue
             for unit in devices.values():
                 try:
-                    if not isinstance(unit, SmartDevice):
-                        continue
                     await unit.update()
                     for item in [unit, *unit.children]:
                         records.append(dict(id=item.device_id, name=item.alias, ip=unit.host,
@@ -32,7 +35,7 @@ async def main():
                     continue
                 finally:
                     await unit.disconnect()
-        return dict(records=records, locked=len(locked))
+        return dict(records=records, locked=len(locked), failed_networks=failed_networks)
     host, device_id, action = args
     unit = await Discover.discover_single(host, credentials=auth)
     if unit is None:
