@@ -73,7 +73,16 @@ export class TriggerService {
 
   // TODO: fix ts for wrappers.  Wrappers should extend a base class,
   // and TS should be an array of instances of the wrapper base class?
-  constructor(deviceCache: DeviceCacheService, wrappers: ActionAdapter[]) {
+  constructor(
+    deviceCache: DeviceCacheService,
+    wrappers: ActionAdapter[],
+    private matter?: {
+      performDeviceAction(
+        target: Pick<device, 'id'>,
+        action: string,
+      ): Promise<{ resultText: string; noOp: boolean }>;
+    },
+  ) {
     this.logger = getLogger('Trigger Service');
     this.dayStart = 0;
     this.dayEnd = 0;
@@ -135,17 +144,9 @@ export class TriggerService {
   #handleHitActions = async (hits: Trigger[]) => {
     for (const hit of hits) {
       try {
-        const device = await this.deviceCache.getDeviceById(
-          hit.affectedDeviceId,
-        );
-        this.logger.info('Performing trigger for device:', device);
-        const wrapper = this.wrappers.find(
-          (wrapper) => wrapper.vendor === device.vendor,
-        );
-        if (!wrapper) continue;
-        this.logger.info(`device belongs to ${wrapper.vendor}`);
-        const { resultText, noOp } = await wrapper.performDeviceAction(
-          device,
+        const target = await this.resolveAction(hit.affectedDeviceId);
+        if (!target) continue;
+        const { resultText, noOp } = await target.perform(
           hit.action,
           hit.actionValue,
         );
@@ -212,31 +213,64 @@ export class TriggerService {
           entry.data.triggerValue === 'ring-motion:Front Door',
       );
     if (!light) return;
-    const targetId = light.data.affectedDeviceId;
-    const target = targetId.startsWith('kasa-name:')
-      ? await this.deviceCache.findKasaDevice(targetId.slice(10))
-      : await this.deviceCache.getDeviceById(targetId);
-    if (!target) {
-      this.logger.warn('Lighting target unavailable or ambiguous');
+    const target = await this.resolveAction(light.data.affectedDeviceId);
+    if (target) await this.runMotionTimer(target.id, target.perform);
+  };
+
+  bindWalkway(id: string) {
+    const matches = this.db
+      .all()
+      .filter(
+        (entry: FSDbEntry) =>
+          entry.data.action === 'turnOn' &&
+          entry.data.triggerValue === 'ring-motion:Front Door',
+      );
+    if (matches.length !== 1) throw Error('Expected one Front Door rule');
+    const [entry] = matches;
+    this.db.set(entry.ID, { ...entry.data, affectedDeviceId: id });
+  }
+
+  private async resolveAction(id: string) {
+    const matter = this.matter;
+    if (id.startsWith('matter:')) {
+      if (matter)
+        return {
+          id,
+          perform: (action: string) =>
+            matter.performDeviceAction({ id }, action),
+        };
       return;
     }
-    const wrapper = this.wrappers.find(
-      (candidate) => candidate.vendor === target.vendor,
-    );
-    if (!wrapper) return;
-    await wrapper.performDeviceAction(target, 'turnOn', 1);
-    const priorTimer = this.motionTimers.get(target.id);
+    const device = id.startsWith('kasa-name:')
+      ? await this.deviceCache.findKasaDevice(id.slice(10))
+      : await this.deviceCache.getDeviceById(id);
+    const adapter = this.wrappers.find((w) => w.vendor === device?.vendor);
+    if (device && adapter)
+      return {
+        id: device.id,
+        perform: (action: string, value: string | number) =>
+          adapter.performDeviceAction(device, action, value),
+      };
+    this.logger.warn('Lighting target unavailable or ambiguous');
+  }
+
+  private async runMotionTimer(
+    id: string,
+    perform: (action: string, value: number) => Promise<unknown>,
+  ) {
+    await perform('turnOn', 1);
+    const priorTimer = this.motionTimers.get(id);
     if (priorTimer) clearTimeout(priorTimer);
     const timer = setTimeout(async () => {
       try {
-        await wrapper.performDeviceAction(target, 'turnOff', 0);
+        await perform('turnOff', 0);
       } catch {
         this.logger.error('Failed to turn off pathway light');
       }
-      this.motionTimers.delete(target.id);
+      this.motionTimers.delete(id);
     }, 15 * 60 * 1000);
-    this.motionTimers.set(target.id, timer);
-  };
+    this.motionTimers.set(id, timer);
+  }
 
   getTriggersBySourceDevice() {}
 }

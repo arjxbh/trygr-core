@@ -110,3 +110,4 @@ dist
 *.key
 secrets/
 .aws/
+matter-state/

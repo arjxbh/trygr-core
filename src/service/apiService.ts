@@ -9,7 +9,11 @@ import { getLogger } from '../service/loggingService';
 const triggerSchema = joi.object<Trigger>({
   affectedDeviceId: joi
     .alternatives()
-    .try(joi.string().alphanum(), joi.string().pattern(/^kasa-name:.{1,100}$/))
+    .try(
+      joi.string().alphanum(),
+      joi.string().pattern(/^matter:\d{1,20}:\d{1,5}$/),
+      joi.string().pattern(/^kasa-name:.{1,100}$/),
+    )
     .required(),
   triggerType: joi.string().alphanum().required(),
   triggerValue: [joi.string(), joi.number()],

@@ -1,5 +1,6 @@
 import { ZIPCODEBASE_API_KEY, ZIP_CODE, COUNTRY_CODE } from './config/env';
 import { connectRing } from './model/ringWrapper';
+import { MatterWrapper } from './model/matterWrapper';
 import { KasaWrapper } from './model/tpLinkWrapper';
 import { ZipCodeProxy } from './model/zipCodeProxy';
 import { WeatherProxy } from './model/weatherProxy';
@@ -50,7 +51,11 @@ async function startWeather(triggers: TriggerService) {
 
 const deviceCache = new DeviceCacheService();
 const kasa = new KasaWrapper(deviceCache);
-const triggers = new TriggerService(deviceCache, [kasa]);
+const matter = new MatterWrapper();
+const triggers = new TriggerService(deviceCache, [kasa], matter);
+void matter
+  .start((id) => triggers.bindWalkway(id))
+  .catch(() => console.error('Matter controller failed to start'));
 new ApiService(triggers);
 void connectRing(
   (device) => deviceCache.updateDevice(device),

@@ -50,3 +50,24 @@ Start with the [application entry point](src/app.ts) and the [shared device reco
 Kasa discovery checks each IPv4 broadcast network, caches plugs and bulbs on first sight, and tracks each outlet on a power strip separately. The Mac installer also installs python-kasa in a private virtual environment for devices using TP-Link's authenticated protocol. Set `KASA_USERNAME` and `KASA_PASSWORD` using the release's `scripts/set-secret.sh` to resolve their names and control them.
 
 The nighttime motion rule calculates sunlight locally from the doorbell location. You can also supply `LATITUDE` and `LONGITUDE` through the settings helper. `GET /solar` reports the solar window and current nighttime status.
+
+### Matter outlets on the Mac mini
+
+Trygr can commission a Wi-Fi Matter outlet that is already on a reachable LAN. It discovers devices on the Mac's multicast-capable interfaces, saves its controller identity under the private state directory, and addresses each switch by its Matter node and endpoint ID. Preserve the private `~/.local/share/trygr/state/matter-state/fabric` directory when migrating the controller.
+
+For a Kasa EP40M, obtain the manual setup code in Kasa under device settings → Device Info → Matter Setup Code. If the outlet already belongs to another Matter controller, open its sharing or pairing window there and use the newly generated code. [TP-Link setup instructions](https://www.tp-link.com/us/support/faq/4411/)
+
+From a terminal on the Mac mini, run:
+
+```sh
+bash ~/.local/share/trygr/matter.sh pair
+bash ~/.local/share/trygr/matter.sh list
+```
+
+Pairing prompts privately for the code. The list shows the connected nodes, each switchable endpoint ID, and its current on/off state. To identify the walkway socket, change only Walkway Lights in Kasa and compare the lists before and after. Once confirmed, substitute its exact ID below:
+
+```sh
+bash ~/.local/share/trygr/matter.sh walkway 'matter:NODE:ENDPOINT'
+```
+
+This updates the existing Front Door motion rule in place. The next nighttime motion turns on that endpoint and restarts its 15-minute timer. The same endpoint IDs can be used as `affectedDeviceId` in other on/off triggers.

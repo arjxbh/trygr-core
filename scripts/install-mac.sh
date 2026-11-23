@@ -49,6 +49,7 @@ healthy() {
   return 1
 }
 if activate "$release/agent.plist" && healthy; then
+  ln -sfn "$release/scripts/matter.sh" "$base/matter.sh"
   echo "Trygr is running from $release"
   exit 0
 fi

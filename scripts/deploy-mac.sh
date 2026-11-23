@@ -8,7 +8,7 @@ if [[ ! $target =~ ^[[:alnum:]_][[:alnum:]_.@-]*$ ]]; then
 fi
 npm run check
 # Send only compiled code, manifests and the two host-side scripts.
-tar --exclude='*.test.js' -czf - dist package.json package-lock.json scripts/install-mac.sh scripts/set-secret.sh scripts/kasa_modern.py |
+tar --exclude='*.test.js' -czf - dist package.json package-lock.json scripts/install-mac.sh scripts/set-secret.sh scripts/kasa_modern.py scripts/matter.sh |
   ssh "$target" 'set -eu
     test "$(uname -s)" = Darwin
     umask 077
