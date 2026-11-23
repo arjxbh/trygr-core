@@ -1,5 +1,5 @@
-npm install
-. ../setEnv.sh
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
 npm run build
-redis-server &
-npm start
+exec npm start

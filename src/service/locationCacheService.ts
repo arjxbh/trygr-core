@@ -43,7 +43,9 @@ export class LocationCacheService {
       `Updating location ${location.postalCode} with ${payload}`,
     );
 
-    this.triggers.triggerByTemperature(location.currentWeather.temperature); // fire and forget
+    void this.triggers
+      .triggerByTemperature(location.currentWeather.temperature)
+      .catch(() => this.logger.error('Trigger action failed'));
 
     return await this.cache.set(location.postalCode, payload);
   }

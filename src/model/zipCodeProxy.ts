@@ -1,7 +1,14 @@
 import axios from 'axios';
 import Logger from 'bunyan';
-//import * as tzlookup from 'tz-lookup';
-const tzlookup = require('tz-lookup'); // ts doesn't like "import" for this lib -- TS2497
+import tzlookup from 'tz-lookup';
+interface ZipDetails {
+  latitude: string;
+  longitude: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country_code: string;
+}
 import { getLogger } from '../service/loggingService';
 
 const ZIPCODEBASE_URL = 'https://app.zipcodebase.com/api/v1/search';
@@ -20,19 +27,25 @@ export class ZipCodeProxy {
   // TODO: add error handling
   // TODO: don't use any
   getDetails = async (zipCode: string) => {
-    const res = await axios.get(`${ZIPCODEBASE_URL}?codes=${zipCode}`, {
-      headers: { apiKey: this.apiKey },
-    });
-
-    let zipCodeDetails = res.data.results[zipCode].find(
-      (r: any) => r.country_code === this.countryCode,
+    const res = await axios.get<{ results: Record<string, ZipDetails[]> }>(
+      `${ZIPCODEBASE_URL}?codes=${zipCode}`,
+      {
+        headers: { apiKey: this.apiKey },
+      },
     );
 
-    zipCodeDetails.timezone = tzlookup(zipCodeDetails.latitude, zipCodeDetails.longitude);
+    const zipCodeDetails = res.data.results[zipCode].find(
+      (r) => r.country_code === this.countryCode,
+    );
+
+    if (!zipCodeDetails) throw new Error('Postal code not found');
+    const timezone = tzlookup(
+      Number(zipCodeDetails.latitude),
+      Number(zipCodeDetails.longitude),
+    );
 
     this.logger.info(`Zip code details for ${zipCode}`, zipCodeDetails);
 
-    return zipCodeDetails;
+    return { ...zipCodeDetails, timezone };
   };
 }
- 

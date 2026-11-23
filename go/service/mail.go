@@ -1,9 +1,10 @@
 package service
 
 import (
-	"gopkg.in/gomail.v2"
-	"github.com/sirupsen/logrus"
+	"crypto/tls"
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/gomail.v2"
 )
 
 type MailService struct {
@@ -14,7 +15,8 @@ type MailService struct {
 
 func NewMailService(host, username, password string, port int, secure bool) *MailService {
 	dialer := gomail.NewDialer(host, port, username, password)
-	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: !secure}
+	dialer.SSL = secure || port == 465
+	dialer.TLSConfig = &tls.Config{ServerName: host, MinVersion: tls.VersionTLS12}
 
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})

@@ -1,15 +1,14 @@
-const RING_REFRESH_TOKEN = process.env.ring_refresh_token || '';
-const ZIPCODEBASE_API_KEY = process.env.zipcodebase_api_key || '';
-const ZIP_CODE = process.env.zip_code || '0';
-const COUNTRY_CODE = process.env.country_code || 'US';
-const SMTP_HOST = process.env.smtp_host || '';
-const SMTP_PORT = parseInt(process.env.smtp_port || '25', 10);
-const SMTP_SECURE = process.env.smtp_secure === 'true';
-const SMTP_USERNAME = process.env.smtp_username || '';
-const SMTP_PASSWORD = process.env.smtp_password || '';
+import { readSetting } from './secrets';
+const ZIPCODEBASE_API_KEY = readSetting('ZIPCODEBASE_API_KEY') || '';
+const ZIP_CODE = readSetting('ZIP_CODE') || '0';
+const COUNTRY_CODE = readSetting('COUNTRY_CODE') || 'US';
+const SMTP_HOST = readSetting('SMTP_HOST') || '';
+const SMTP_PORT = parseInt(readSetting('SMTP_PORT') || '25', 10);
+const SMTP_SECURE = readSetting('SMTP_SECURE') === 'true';
+const SMTP_USERNAME = readSetting('SMTP_USERNAME') || '';
+const SMTP_PASSWORD = readSetting('SMTP_PASSWORD') || '';
 
 export {
-  RING_REFRESH_TOKEN,
   ZIPCODEBASE_API_KEY,
   ZIP_CODE,
   COUNTRY_CODE,

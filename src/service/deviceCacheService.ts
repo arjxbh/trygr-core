@@ -31,8 +31,30 @@ export class DeviceCacheService {
     return JSON.parse(payload || '');
   }
 
-  async getDeviceByName(name: device['name']) {
-    // TODO: implement this
+  async findKasaDevice(name: string): Promise<device | undefined> {
+    let cursor = '0';
+    const matches = new Map<string, device>();
+    do {
+      const [next, keys] = await this.cache.scan(cursor, 'COUNT', 100);
+      cursor = next;
+      if (!keys.length) continue;
+      for (const payload of await this.cache.mget(keys)) {
+        if (!payload) continue;
+        let row;
+        try {
+          row = JSON.parse(payload);
+        } catch {
+          continue;
+        }
+        if (
+          row?.vendor === 'kasa' &&
+          row.name === name &&
+          Date.now() - row.lastUpdated < 180000
+        )
+          matches.set(row.id, row);
+      }
+    } while (cursor !== '0');
+    if (matches.size === 1) return [...matches.values()][0];
   }
 
   async closeConnection() {

@@ -1,2 +1,1 @@
-const TuyAPI = require('tyuapi');
-
+// Tuya integration placeholder.

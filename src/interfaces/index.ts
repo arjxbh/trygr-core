@@ -14,6 +14,7 @@ export interface trigger {
 export interface device {
   id: string;
   status: string;
+  protocol?: 'smart';
   onACPower: boolean;
   name: string;
   hasBrightness: boolean;
@@ -29,7 +30,7 @@ export interface device {
 }
 
 export interface ExternalDeviceCache {
-  (device: device): Promise<any>;
+  (device: device): Promise<unknown>;
 }
 
 export interface ExternalDeviceLookup {

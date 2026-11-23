@@ -1,72 +1,94 @@
-import { RingApi, RingDevice, RingDeviceData, Location } from 'ring-client-api';
-import { device, ExternalDeviceCache } from '../interfaces';
+import { RingApi, type RingDeviceData, type RingCamera } from 'ring-client-api';
+import { useLogger } from 'ring-client-api/util';
+import { readSetting, writeSecret } from '../config/secrets';
+import type { device, ExternalDeviceCache } from '../interfaces';
 
-export class RingWrapper {
-  api: RingApi;
-  vendor: string;
-  cacheDevice: ExternalDeviceCache;
-
-  constructor (refreshToken: string, updateDevice: ExternalDeviceCache) {
-    this.vendor='ring';
-    this.api = new RingApi({ refreshToken });
-    this.cacheDevice = updateDevice;
-
-    this.#subscribeAll();
-  }
-
-  // TODO: make this more better with DRY
-  async #subscribeAll() {
-    const locations = await this.api.getLocations();
-    const devices = await locations[0].getDevices();
-
-    devices.forEach(d => {
-      d.onData.subscribe(data => {
-        console.log(`updating device: ${data.name}`);
-        this.cacheDevice(this.#formatDeviceResponse(data));
-      })
-    })
-  }
-
-  async #getLocations() {
-    return await this.api.getLocations();
-
-  }
-
-  #formatDeviceResponse (device: RingDevice|RingDeviceData): device {
-    const { deviceType, name, zid } = device;
-    //@ts-ignore
-    const { faulted, acStatus } = typeof device.data !== "undefined" ? device.data : device;
-
-    return {
-      name,
-      id: zid,
-      type: deviceType,
-      status: faulted ? 'fault' : 'normal', // TODO: add support for motion sensors
-      onACPower: acStatus === 'ok' ? true : false,
-      hasBrightness: false, // TODO: make better
-      hasVolume: false, // TODO: make better
-      vendor: this.vendor,
-      onTime: 0, // I don't think ring supports this value -- should this be optional?
-      lastUpdated: Date.now(),
+export async function connectRing(
+  cacheDevice: ExternalDeviceCache,
+  onMotion: (cameraName: string, latitude?: number, longitude?: number) => void,
+  onLocation?: (name: string, latitude: number, longitude: number) => void,
+) {
+  const token = readSetting('RING_REFRESH_TOKEN');
+  if (!token) return;
+  // SDK errors can contain raw HTTP requests and authorization headers.
+  useLogger({
+    logInfo: () => {},
+    logError: () => console.error('Ring SDK request failed'),
+  });
+  const api = new RingApi({ refreshToken: token });
+  const rotation = api.onRefreshTokenUpdated.subscribe(
+    ({ newRefreshToken }) => {
+      writeSecret('RING_REFRESH_TOKEN', newRefreshToken);
+    },
+  );
+  try {
+    for (const camera of await api.getCameras()) {
+      await cacheDevice(formatCamera(camera));
+      subscribeCamera(camera, cacheDevice);
+      const data = camera.data;
+      const coordinates = 'latitude' in data ? data : undefined;
+      if (coordinates)
+        onLocation?.(camera.name, coordinates.latitude, coordinates.longitude);
+      camera.onMotionStarted.subscribe(() =>
+        onMotion(camera.name, coordinates?.latitude, coordinates?.longitude),
+      );
     }
+    for (const location of await api.getLocations()) {
+      for (const sensor of await location.getDevices()) {
+        sensor.onData.subscribe((data) => {
+          cacheDevice(formatDevice(data)).catch(() =>
+            console.error('Could not cache Ring device'),
+          );
+        });
+      }
+    }
+    console.info('Ring devices and cameras subscribed');
+  } catch {
+    rotation.unsubscribe();
+    api.disconnect();
+    console.error('Ring connection failed. Retrying in one minute.');
+    setTimeout(
+      () => void connectRing(cacheDevice, onMotion, onLocation),
+      60000,
+    );
   }
+}
 
-  async getDevices(): Promise<device[]> {
-    const locations = await this.#getLocations();
-    return await this.getDevicesByLocationIndex(0, locations);
-  }
+function formatDevice(data: RingDeviceData): device {
+  return {
+    name: data.name,
+    id: data.zid,
+    type: data.deviceType,
+    status: data.faulted ? 'fault' : 'normal',
+    onACPower: data.acStatus === 'ok',
+    hasBrightness: false,
+    hasVolume: false,
+    vendor: 'ring',
+    onTime: 0,
+    lastUpdated: Date.now(),
+  };
+}
 
-  // maybe refactor this to do getDevices() on constructor, and then subscribe to each device
-  // once that's done, use a similar #updateDeviceState mechanism to kasa, and keep a hash map
-  // of devices.  subscribe using device.onData.subscribe((data)=>{ handle data; })
+function formatCamera(camera: RingCamera): device {
+  const data = camera.data;
+  return {
+    id: `camera:${camera.id}`,
+    name: camera.name,
+    type: String(camera.deviceType),
+    status: data.alerts.connection,
+    onACPower: !camera.operatingOnBattery,
+    hasBrightness: camera.hasLight,
+    hasVolume: false,
+    vendor: 'ring',
+    onTime: 0,
+    lastUpdated: Date.now(),
+  };
+}
 
-  async getDevicesByLocationId(locationId: string): Promise<device[]> {
-    const locations = await this.#getLocations();
-    return await this.getDevicesByLocationIndex(0, locations.filter(l => l.locationId === locationId));
-  }
-
-  async getDevicesByLocationIndex(locationIndex: number, locations: Location[]): Promise<device[]> {
-    const devices = await locations[locationIndex].getDevices();
-    return devices.map(d => this.#formatDeviceResponse(d));
-  }
+function subscribeCamera(camera: RingCamera, cacheDevice: ExternalDeviceCache) {
+  camera.onData.subscribe(() => {
+    void cacheDevice(formatCamera(camera)).catch(() =>
+      console.error('Could not cache Ring camera'),
+    );
+  });
 }

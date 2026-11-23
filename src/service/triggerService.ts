@@ -1,9 +1,11 @@
-const FSDB = require('file-system-db');
-const zeropad = require('zeropad');
+import FSDB from 'file-system-db';
+import type { device } from '../interfaces';
 import { DeviceCacheService } from '../service/deviceCacheService';
 import { MailService } from './mailService';
 import { getLogger } from '../service/loggingService';
 import Logger from 'bunyan';
+import { solarWindow } from '../model/solar';
+import { readSetting } from '../config/secrets';
 
 // TODO: move to interfaces file when ready
 
@@ -30,6 +32,15 @@ interface FSDbEntry {
   data: Trigger;
 }
 
+interface ActionAdapter {
+  vendor: string;
+  performDeviceAction(
+    device: device,
+    action: string,
+    value: string | number,
+  ): Promise<{ resultText: string; noOp: boolean }>;
+}
+
 const dbName = 'triggerDb';
 
 /*
@@ -43,26 +54,38 @@ const dbName = 'triggerDb';
  * maybe a max of 100 triggers, it's okay.
  */
 export class TriggerService {
-  db: typeof FSDB;
+  db: FSDB<Trigger>;
   dayStart: number;
   dayEnd: number;
   deviceCache: DeviceCacheService;
-  wrappers: any[];
-  vendorMap: any; // TODO: interface
+  wrappers: ActionAdapter[];
   notification: MailService;
+  private solarCoordinates?: [number, number];
+  setSolarLocation(latitude: number, longitude: number) {
+    if (solarWindow(latitude, longitude))
+      this.solarCoordinates = [latitude, longitude];
+  }
+  getSolarWindow() {
+    if (this.solarCoordinates) return solarWindow(...this.solarCoordinates);
+  }
+  motionTimers: Map<string, NodeJS.Timeout>;
   logger: Logger;
 
   // TODO: fix ts for wrappers.  Wrappers should extend a base class,
   // and TS should be an array of instances of the wrapper base class?
-  constructor(deviceCache: DeviceCacheService, wrappers: any[]) {
+  constructor(deviceCache: DeviceCacheService, wrappers: ActionAdapter[]) {
     this.logger = getLogger('Trigger Service');
     this.dayStart = 0;
     this.dayEnd = 0;
     this.#setDayLimits();
-    this.#connect();
+    this.db = new FSDB(`./${dbName}.json`);
     this.deviceCache = deviceCache;
     this.wrappers = wrappers;
     this.notification = new MailService();
+    const lat = readSetting('LATITUDE'),
+      lon = readSetting('LONGITUDE');
+    if (lat && lon) this.setSolarLocation(Number(lat), Number(lon));
+    this.motionTimers = new Map();
   }
 
   listTriggers = () => {
@@ -80,14 +103,10 @@ export class TriggerService {
     this.dayEnd = Math.floor(end.getTime() / 1000);
   };
 
-  #connect = async () => {
-    this.db = new FSDB(`./${dbName}.json`);
-  };
-
   // note: don't use . in naming, it breaks FSDB
   #createTriggerId = (triggerType: Trigger['triggerType']) => {
     const numEntries = this.db.all().length;
-    return `${triggerType}:${zeropad(numEntries + 1, 4)}`;
+    return `${triggerType}:${String(numEntries + 1).padStart(4, '0')}`;
   };
 
   createTrigger = (trigger: Trigger) => {
@@ -99,7 +118,7 @@ export class TriggerService {
 
   deleteTrigger = (triggerId: string) => {
     this.db.delete(triggerId);
-  }
+  };
 
   getTriggersByTime() {}
 
@@ -113,24 +132,34 @@ export class TriggerService {
   //   });
   // };
 
-  #handleHitActions = (hits: Trigger[]) => {
-    hits.forEach(async (hit: Trigger) => {
-      const device = await this.deviceCache.getDeviceById(hit.affectedDeviceId);
-      this.logger.info('Performing trigger for device:', device);
-      const wrapper = this.wrappers.find(
-        (wrapper: any) => wrapper.vendor === device.vendor,
-      );
-      this.logger.info(`device belongs to ${wrapper.vendor}`);
-      const { resultText, noOp } = wrapper.performDeviceAction(
-        device,
-        hit.action,
-        hit.actionValue,
-      );
-      this.logger.info(resultText);
-      if (!noOp && hit.notify && hit.notify?.length) {
-        this.notification.sendNotification(hit.notify, resultText);
+  #handleHitActions = async (hits: Trigger[]) => {
+    for (const hit of hits) {
+      try {
+        const device = await this.deviceCache.getDeviceById(
+          hit.affectedDeviceId,
+        );
+        this.logger.info('Performing trigger for device:', device);
+        const wrapper = this.wrappers.find(
+          (wrapper) => wrapper.vendor === device.vendor,
+        );
+        if (!wrapper) continue;
+        this.logger.info(`device belongs to ${wrapper.vendor}`);
+        const { resultText, noOp } = await wrapper.performDeviceAction(
+          device,
+          hit.action,
+          hit.actionValue,
+        );
+        this.logger.info(resultText);
+        if (!noOp && hit.notify && hit.notify?.length) {
+          await this.notification.sendNotification(hit.notify, resultText);
+        }
+      } catch {
+        this.logger.error(
+          'Trigger action failed for device %s',
+          hit.affectedDeviceId,
+        );
       }
-    });
+    }
   };
 
   // TODO: there is probably a better way to do this
@@ -140,7 +169,7 @@ export class TriggerService {
     } else {
       return parseInt(value, 10);
     }
-  }
+  };
 
   getTemperatureHits = async (temperature: number) => {
     const triggers = this.db.all();
@@ -169,7 +198,44 @@ export class TriggerService {
     this.logger.debug('triggering by temperature, getting hits...');
     const hits = await this.getTemperatureHits(temperature);
     this.logger.debug(hits);
-    this.#handleHitActions(hits);
+    await this.#handleHitActions(hits);
+  };
+
+  triggerFrontDoorMotion = async (cameraName: string) => {
+    if (cameraName !== 'Front Door') return;
+    if (!this.getSolarWindow()?.nighttime) return;
+    const light = this.db
+      .all()
+      .find(
+        (entry: FSDbEntry) =>
+          entry.data.action === 'turnOn' &&
+          entry.data.triggerValue === 'ring-motion:Front Door',
+      );
+    if (!light) return;
+    const targetId = light.data.affectedDeviceId;
+    const target = targetId.startsWith('kasa-name:')
+      ? await this.deviceCache.findKasaDevice(targetId.slice(10))
+      : await this.deviceCache.getDeviceById(targetId);
+    if (!target) {
+      this.logger.warn('Lighting target unavailable or ambiguous');
+      return;
+    }
+    const wrapper = this.wrappers.find(
+      (candidate) => candidate.vendor === target.vendor,
+    );
+    if (!wrapper) return;
+    await wrapper.performDeviceAction(target, 'turnOn', 1);
+    const priorTimer = this.motionTimers.get(target.id);
+    if (priorTimer) clearTimeout(priorTimer);
+    const timer = setTimeout(async () => {
+      try {
+        await wrapper.performDeviceAction(target, 'turnOff', 0);
+      } catch {
+        this.logger.error('Failed to turn off pathway light');
+      }
+      this.motionTimers.delete(target.id);
+    }, 15 * 60 * 1000);
+    this.motionTimers.set(target.id, timer);
   };
 
   getTriggersBySourceDevice() {}

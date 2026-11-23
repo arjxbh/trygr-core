@@ -22,17 +22,17 @@ type Device struct {
 
 // Location represents geographic location and weather data
 type Location struct {
-	PostalCode        string  `json:"postalCode" redis:"postalCode"`
-	Latitude          string  `json:"latitude" redis:"latitude"`
-	Longitude         string  `json:"longitude" redis:"longitude"`
-	City              string  `json:"city" redis:"city"`
-	State             string  `json:"state" redis:"state"`
-	CountryCode       string  `json:"countryCode" redis:"countryCode"`
-	UTCOffsetSeconds  int     `json:"utcOffsetSeconds" redis:"utcOffsetSeconds"`
-	Sunrise           int64   `json:"sunrise" redis:"sunrise"`
-	Sunset            int64   `json:"sunset" redis:"sunset"`
-	CurrentWeather    Weather `json:"currentWeather" redis:"currentWeather"`
-	LastUpdated       int64   `json:"lastUpdated,omitempty" redis:"lastUpdated"`
+	PostalCode       string  `json:"postalCode" redis:"postalCode"`
+	Latitude         string  `json:"latitude" redis:"latitude"`
+	Longitude        string  `json:"longitude" redis:"longitude"`
+	City             string  `json:"city" redis:"city"`
+	State            string  `json:"state" redis:"state"`
+	CountryCode      string  `json:"countryCode" redis:"countryCode"`
+	UTCOffsetSeconds int     `json:"utcOffsetSeconds" redis:"utcOffsetSeconds"`
+	Sunrise          int64   `json:"sunrise" redis:"sunrise"`
+	Sunset           int64   `json:"sunset" redis:"sunset"`
+	CurrentWeather   Weather `json:"currentWeather" redis:"currentWeather"`
+	LastUpdated      int64   `json:"lastUpdated,omitempty" redis:"lastUpdated"`
 }
 
 // Weather represents current weather conditions

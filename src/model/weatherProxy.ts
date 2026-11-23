@@ -1,12 +1,6 @@
-/***
- * https://open-meteo.com/en/docs#latitude=40.36&longitude=-74.24&hourly=temperature_2m,temperature_120m&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York
- *
- * https://api.open-meteo.com/v1/forecast?latitude=40.36&longitude=-74.24&hourly=temperature_2m,temperature_120m&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York
- */
 import axios from 'axios';
 import Logger from 'bunyan';
 import { getLogger } from '../service/loggingService';
-
 
 // TODO: make this interface more explicit
 interface WeatherUnits {
@@ -37,7 +31,9 @@ export class WeatherProxy {
 
   // TODO: improve error handling
   getDetails = async (latitude: string, longitude: string) => {
-    this.logger.info(`Fetching weather details for ${latitude}, ${longitude} in ${this.timezone}`);
+    this.logger.info(
+      `Fetching weather details for ${latitude}, ${longitude} in ${this.timezone}`,
+    );
 
     const url = `${WEATHER_BASE_URL}?latitude=${latitude.substring(
       0,
@@ -47,15 +43,17 @@ export class WeatherProxy {
       7,
     )}&${HOURLY_PARAMS}&temperature_unit=${
       this.temperatureUnit
-    }&windspeed_unit=${this.windspeedUnit}&percipitation_unit=${
+    }&windspeed_unit=${
+      this.windspeedUnit
+    }&timeformat=unixtime&precipitation_unit=${
       this.precipitationUnit
     }&timezone=${this.timezone}&daily=sunrise,sunset`;
 
     try {
       const res = await axios.get(url);
       return res.data;
-    } catch (e) {
-      this.logger.error(e);
+    } catch {
+      throw new Error('Weather request failed');
     }
   };
 }

@@ -2,26 +2,30 @@ import axios, { AxiosInstance } from 'axios';
 import Logger from 'bunyan';
 import { getLogger } from '../service/loggingService';
 import { DeviceCacheService } from '../service/deviceCacheService';
-import { device, ExternalDeviceCache, ExternalDeviceLookup } from '../interfaces';
+import {
+  device,
+  ExternalDeviceCache,
+  ExternalDeviceLookup,
+} from '../interfaces';
 
 /**
  * EcoFlow Wrapper
- * 
+ *
  * This wrapper integrates EcoFlow smart battery devices into the middleware system.
  * It allows monitoring battery status and controlling AC output to power connected devices.
- * 
+ *
  * IMPORTANT: The API endpoints and authentication method in this wrapper are based on
  * common API patterns. You may need to adjust the following based on actual EcoFlow API documentation:
  * - API_ENDPOINT: The base URL for EcoFlow API
  * - Authentication method: May use headers, query params, or request signing
  * - Endpoint paths: /device/list, /device/{id}/info, /device/{id}/control
  * - Request/response formats: The data structures may differ
- * 
+ *
  * To use this wrapper:
  * 1. Obtain access_key and secret_key from EcoFlow Developer Portal
  * 2. Initialize: const ecoflow = new EcoFlowWrapper(accessKey, secretKey, deviceCache);
  * 3. Add to TriggerService: new TriggerService(deviceCache, [kasa, ecoflow]);
- * 
+ *
  * Supported actions:
  * - turnOn: Enables AC output
  * - turnOff: Disables AC output
@@ -201,7 +205,8 @@ export class EcoFlowWrapper {
 
       return Promise.all(devicePromises);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const errorResponse = (error as { response?: { data?: unknown } })
         ?.response?.data;
       this.logger.error(
@@ -241,7 +246,8 @@ export class EcoFlowWrapper {
 
       return this.#formatDeviceResponse(deviceInfo);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const errorResponse = (error as { response?: { data?: unknown } })
         ?.response?.data;
       this.logger.error(
@@ -255,7 +261,7 @@ export class EcoFlowWrapper {
   async performDeviceAction(
     device: device,
     action: string,
-    actionValue: string | number,
+    _actionValue: string | number,
   ): Promise<{ resultText: string; noOp: boolean }> {
     this.logger.info(`requested action ${action} for device ${device.name}`);
     this.logger.info(device);
@@ -290,11 +296,18 @@ export class EcoFlowWrapper {
           resultText = `Unknown action: ${action} for device ${device.name}`;
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorResponse = (error as { response?: { data?: { error?: { message?: string } } } })
-        ?.response?.data;
-      this.logger.error(`Error performing action ${action}:`, errorResponse || errorMessage);
-      resultText = `Error performing action ${action}: ${errorResponse?.error?.message || errorMessage}`;
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const errorResponse = (
+        error as { response?: { data?: { error?: { message?: string } } } }
+      )?.response?.data;
+      this.logger.error(
+        `Error performing action ${action}:`,
+        errorResponse || errorMessage,
+      );
+      resultText = `Error performing action ${action}: ${
+        errorResponse?.error?.message || errorMessage
+      }`;
       noOp = true;
     }
 
@@ -309,4 +322,3 @@ export class EcoFlowWrapper {
     });
   }
 }
-

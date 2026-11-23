@@ -1,24 +1,20 @@
 {
-    "compilerOptions": {
-        "target": "ESNEXT",
-        "module": "commonjs",
-        "allowSyntheticDefaultImports": true,
-        "outDir": "./dist",
-        "removeComments": true,
-        "resolveJsonModule": true,
-        "strict": true,
-        "skipLibCheck": true,
-        "experimentalDecorators": true,
-        "typeRoots": [
-            "./node_modules/@types",
-            "./src/types"
-        ],
-        "types": [
-            "node"
-        ],
-        "esModuleInterop": true
-    },
-    "include": [
-        "src"
-    ]
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "node20",
+    "allowSyntheticDefaultImports": true,
+    "outDir": "./dist",
+    "removeComments": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "types": ["node"],
+    "esModuleInterop": true,
+    "noEmitOnError": true,
+    "rootDir": "src"
+  },
+  "include": ["src"]
 }

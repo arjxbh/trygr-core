@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"context"
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 
 	"trygr-core/interfaces"
 )
@@ -24,7 +24,7 @@ func NewDeviceCacheService(redisURL string) *DeviceCacheService {
 	}
 
 	client := redis.NewClient(opt)
-	
+
 	// Test connection
 	ctx := context.Background()
 	_, err = client.Ping(ctx).Result()
@@ -43,7 +43,7 @@ func NewDeviceCacheService(redisURL string) *DeviceCacheService {
 
 func (d *DeviceCacheService) UpdateDevice(device interfaces.Device) error {
 	device.LastUpdated = time.Now()
-	
+
 	payload, err := json.Marshal(device)
 	if err != nil {
 		return fmt.Errorf("failed to marshal device: %w", err)

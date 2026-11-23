@@ -5,27 +5,31 @@ import (
 	"fmt"
 	"time"
 
+	"context"
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
-	"context"
 
 	"trygr-core/interfaces"
 )
 
+type TemperatureTrigger interface {
+	TriggerByTemperature(float64)
+}
+
 type LocationCacheService struct {
 	client   *redis.Client
-	triggers *TriggerService
+	triggers TemperatureTrigger
 	logger   *logrus.Logger
 }
 
-func NewLocationCacheService(redisURL string, triggers *TriggerService) *LocationCacheService {
+func NewLocationCacheService(redisURL string, triggers TemperatureTrigger) *LocationCacheService {
 	opt, err := redis.ParseURL(redisURL)
 	if err != nil {
 		logrus.Fatalf("Failed to parse Redis URL: %v", err)
 	}
 
 	client := redis.NewClient(opt)
-	
+
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})
 
@@ -47,7 +51,7 @@ func (l *LocationCacheService) ConvertTimeToUnix(timeStr string) int64 {
 
 func (l *LocationCacheService) UpdateLocation(location interfaces.Location) error {
 	location.LastUpdated = time.Now().Unix()
-	
+
 	payload, err := json.Marshal(location)
 	if err != nil {
 		return fmt.Errorf("failed to marshal location: %w", err)

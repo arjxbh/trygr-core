@@ -1,154 +1,152 @@
-import Logger from 'bunyan';
-import { getLogger } from '../service/loggingService';
-import { Client } from 'tplink-smarthome-api';
-import { device, ExternalDeviceCache, ExternalDeviceLookup } from '../interfaces';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import { readSetting } from '../config/secrets';
+import { networkInterfaces } from 'node:os';
+import { Bulb, Client, Device, Plug } from 'tplink-smarthome-api';
+import { isPlugSysinfo, isBulbSysinfo } from 'tplink-smarthome-api/lib/device';
+import type { device } from '../interfaces';
 import { DeviceCacheService } from '../service/deviceCacheService';
 
-interface PreferredState {
-  index: number;
-  brightness: number;
-}
-
-// TODO: try to integrate this with existing type
-interface KasaDevice {
-  host: string; // IP address
-  port: number;
-  _sysInfo: {
-    sw_ver: string;
-    hw_ver: string;
-    model: string;
-    deviceId: string;
-    oemId: string;
-    hwId: string;
-    rssi: number;
-    latitude_i: number;
-    longitude_i: number;
-    alias: string;
-    status: string;
-    mic_type: string;
-    feature: string;
-    mac: string;
-    updating: number;
-    led_off: number;
-    relay_state: number;
-    brightness?: number;
-    on_time: number;
-    icon_hash: string;
-    dev_name: string;
-    active_mode: string;
-    next_action: { type: number };
-    preferred_state: PreferredState[];
-    err_code: number;
-  };
+function broadcastTargets() {
+  const hosts = new Set<string>();
+  for (const addresses of Object.values(networkInterfaces())) {
+    for (const nic of addresses ?? []) {
+      if (nic.internal || nic.family !== 'IPv4' || !nic.cidr) continue;
+      if (Number(nic.cidr.split('/')[1]) >= 31) continue;
+      const mask = nic.netmask.split('.').map(Number);
+      hosts.add(
+        nic.address
+          .split('.')
+          .map((octet, i) => Number(octet) | (255 ^ mask[i]))
+          .join('.'),
+      );
+    }
+  }
+  return Array.from(hosts, (host) => ({ host }));
 }
 
 export class KasaWrapper {
-  vendor: string;
-  api: Client;
-  devices: { [key: string]: device };
-  cacheDevice: ExternalDeviceCache;
-  lookupDevice: ExternalDeviceLookup;
-  logger: Logger;
-
-  constructor(deviceCache: DeviceCacheService) {
-    this.logger = getLogger('Kasa');
-    // This is needed because this library throws uncatchable errors if an unexpected device type exists
-    // Probably cameras cause this issue?
-    process.on('uncaughtException', (err) => {
-      if (
-        err.message &&
-        err.message === 'Could not determine device from sysinfo'
-      )
-        return; //ignore invalid device crash
-      this.logger.error('UNHANDLED EXCEPTION', err);
-      process.exit(1);
-    });
-
-    this.vendor = 'kasa';
-    this.api = new Client();
-    this.devices = {};
-    this.cacheDevice = (d) => deviceCache.updateDevice(d);
-    this.lookupDevice = (d) => deviceCache.getDeviceById(d);
-
-    this.api.startDiscovery().on('plug-online', (device) => {
-      this.handleDeviceEvent(device);
+  readonly vendor = 'kasa';
+  private readonly api = new Client();
+  private python =
+    process.env.TRYGR_KASA_PYTHON ||
+    join(homedir(), '.local/share/trygr/kasa-env/bin/python');
+  private async modern(args: string[]) {
+    const { stdout } = await promisify(execFile)(
+      this.python,
+      [join(__dirname, '../../scripts/kasa_modern.py'), ...args],
+      {
+        env: {
+          ...process.env,
+          KASA_USERNAME: readSetting('KASA_USERNAME'),
+          KASA_PASSWORD: readSetting('KASA_PASSWORD'),
+        },
+        timeout: 90000,
+      },
+    );
+    return JSON.parse(stdout);
+  }
+  private async refreshModern() {
+    try {
+      const result = await this.modern([
+        'scan',
+        ...broadcastTargets().map((x) => x.host),
+      ]);
+      for (const row of result.records)
+        await this.cache.updateDevice({
+          ...row,
+          vendor: this.vendor,
+          protocol: 'smart',
+          lastUpdated: Date.now(),
+          hasBrightness: false,
+          hasVolume: false,
+          onACPower: true,
+          onTime: 0,
+        });
+      if (result.locked)
+        console.warn(
+          'Kasa devices requiring account credentials:',
+          result.locked,
+        );
+    } catch {
+      console.error('Modern Kasa discovery failed');
+    } finally {
+      setTimeout(() => void this.refreshModern(), 60000);
+    }
+  }
+  constructor(private readonly cache: DeviceCacheService) {
+    if (existsSync(this.python)) void this.refreshModern();
+    const record = (unit: Device) => {
+      if (unit instanceof Plug || unit instanceof Bulb) {
+        void cache
+          .updateDevice(this.describe(unit))
+          .catch(() => console.error('Kasa cache update failed'));
+      }
+    };
+    this.api.on('device-new', record).on('device-online', record);
+    this.api.startDiscovery({
+      devices: broadcastTargets(),
+      filterCallback: (s) => isPlugSysinfo(s) || isBulbSysinfo(s),
+      breakoutChildren: true,
     });
   }
-
-  #formatDeviceResponse(
-    device: KasaDevice['_sysInfo'],
-    ip: string,
-    port: number,
-  ): device {
-    const { alias, deviceId, dev_name, relay_state, brightness, on_time } =
-      device;
-
+  private describe(unit: Plug | Bulb): device {
+    const bulb = unit instanceof Bulb;
+    const powered = bulb
+      ? unit.sysInfo.light_state.on_off === 1
+      : unit.relayState;
+    const brightness = bulb
+      ? unit.sysInfo.light_state.brightness
+      : unit.sysInfo.brightness;
     return {
-      ip,
-      port,
-      name: alias,
-      id: deviceId,
-      type: dev_name,
-      status: relay_state === 1 ? 'on' : 'off',
-      onACPower: true,
-      hasBrightness: brightness ? true : false,
-      brightness: brightness ? brightness : undefined,
-      hasVolume: false, // TODO: does Kasa support this?
+      id: unit.id,
+      name: unit.alias,
+      ip: unit.host,
+      port: unit.port,
       vendor: this.vendor,
-      onTime: on_time,
+      type: unit.model,
+      status: powered ? 'on' : 'off',
+      hasBrightness: typeof brightness === 'number',
+      brightness,
+      hasVolume: false,
+      onACPower: true,
+      onTime: 0,
       lastUpdated: Date.now(),
     };
   }
-
-  #updateDeviceState(device: device) {
-    this.logger.info(`updating device: ${device.name}`); // TODO: use logger
-    this.devices[device.id] = device;
-    this.logger.debug(`tracking ${Object.keys(this.devices).length} devices`);
-    this.cacheDevice(device);
-  }
-
-  async handleDeviceEvent(device: KasaDevice) {
-    this.#updateDeviceState(
-      this.#formatDeviceResponse(device._sysInfo, device.host, device.port),
-    );
-  }
-
-  // TODO: be more specific about what actions can be
-  async performDeviceAction(device: device, action: string, _actionValue: string | number) {
-    this.logger.info(`requested action ${action} for`);
-    this.logger.info(device);
-    const { status, ip } = await this.lookupDevice(device.id);
-    let resultText =   `error: unexpected action ${action} for device ${device} : noOp`;
-    let noOp = true;
-
-    switch (action) {
-      case 'turnOn':
-        if (status !== 'on') {
-          this.api.getDevice({ host: ip }).then((d) => {
-            resultText =  `${device.name} | ${device.id} turn on`;
-            noOp = false;
-            d.setPowerState(true);
-          });
-        } else {
-          resultText =  `${device.name} | ${device.id} turn on request noOp`;
-        }
-        break;
-      case 'turnOff':
-        if (status !== 'off') {
-          this.api.getDevice({ host: ip }).then((d) => {
-            resultText =  `${device.name} | ${device.id} turn off`;
-            noOp = false;
-            d.setPowerState(false);
-          });
-        } else {
-          resultText =  `${device.name} | ${device.id} turn off request noOp`;
-        }
-        break;
-      case 'setBrightness':
-        resultText =  `Request to set brightness for ${device.name} not yet implemented`;
-        break;
+  async performDeviceAction(target: device, action: string) {
+    if (target.protocol === 'smart' && target.ip) {
+      const { noOp } = await this.modern([
+        'action',
+        target.ip,
+        target.id,
+        action,
+      ]);
+      await this.cache.updateDevice({
+        ...target,
+        status: action === 'turnOn' ? 'on' : 'off',
+        lastUpdated: Date.now(),
+      });
+      return { noOp, resultText: target.name + ' ' + action };
     }
-
-    return { resultText, noOp }
+    const unit = this.api.devices.get(target.id);
+    if (
+      !(unit instanceof Bulb || unit instanceof Plug) ||
+      unit.status === 'offline'
+    )
+      throw new Error('Kasa device unavailable');
+    if (action !== 'turnOn' && action !== 'turnOff')
+      throw new Error('Unsupported Kasa action');
+    const desired = action === 'turnOn';
+    const noOp = (await unit.getPowerState()) === desired;
+    if (!noOp) await unit.setPowerState(desired);
+    await this.cache.updateDevice({
+      ...this.describe(unit),
+      status: desired ? 'on' : 'off',
+    });
+    return { resultText: unit.alias + ' ' + action, noOp };
   }
 }

@@ -1,34 +1,38 @@
 {
-  "name": "kasa",
+  "name": "trygr-core",
   "version": "1.0.0",
-  "description": "",
+  "description": "Local home automation bridge",
   "main": "dist/app.js",
   "scripts": {
-    "test": "./test.sh",
+    "test": "bash test.sh",
     "clean": "rm -rf dist",
     "build:compile": "tsc -p .",
     "build": "npm run clean && npm run build:compile",
-    "start": "npm run build && node dist/app.js"
+    "start": "node dist/app.js",
+    "lint": "eslint --max-warnings=0 --ext .js,.ts src examples *.js .eslintrc.js && npm run format:check && for f in *.sh scripts/*.sh; do bash -n \"$f\" || exit 1; done",
+    "format": "prettier --write src examples *.js .eslintrc.js package.json tsconfig.json .prettierrc.json",
+    "format:check": "prettier --check src examples *.js .eslintrc.js package.json tsconfig.json .prettierrc.json",
+    "check": "npm run lint && npm run build && npm test",
+    "deploy:mac": "bash scripts/deploy-mac.sh",
+    "check:go": "cd go && test -z \"$(gofmt -l .)\" && go vet ./... && go test ./..."
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@koa/router": "^10.0.0",
-    "@sendgrid/mail": "^7.7.0",
+    "@koa/router": "12.0.2",
+    "axios": "1.21.1",
     "bunyan": "^1.8.15",
     "bunyan-format": "^0.2.1",
     "file-system-db": "^1.1.0",
     "ioredis": "^5.2.4",
-    "joi": "^17.7.0",
-    "koa": "^2.14.1",
-    "koa-body": "^6.0.1",
-    "nodemailer": "^6.8.0",
-    "redis-json": "^6.0.3",
-    "ring-client-api": "^11.0.7",
+    "joi": "17.13.9",
+    "koa": "2.16.4",
+    "koa-body": "8.0.1",
+    "nodemailer": "10.6.1",
+    "ring-client-api": "14.3.0",
+    "suncalc": "1.9.0",
     "tplink-smarthome-api": "^4.2.0",
-    "tuyapi": "github:codetheweb/tuyapi",
-    "tz-lookup": "^6.1.25",
-    "zeropad": "^1.1.0"
+    "tz-lookup": "^6.1.25"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.20.2",
@@ -39,12 +43,20 @@
     "@types/jest": "^29.2.6",
     "@types/koa": "^2.13.5",
     "@types/koa__router": "^12.0.0",
+    "@types/node": "24.19.2",
+    "@types/nodemailer": "6.4.24",
+    "@types/suncalc": "1.9.2",
     "@types/tz-lookup": "^6.1.0",
-    "@typescript-eslint/eslint-plugin": "^5.32.0",
-    "@typescript-eslint/parser": "^5.32.0",
-    "eslint": "^8.21.0",
+    "@typescript-eslint/eslint-plugin": "8.74.0",
+    "@typescript-eslint/parser": "8.74.0",
+    "eslint": "8.57.1",
     "jest": "^29.3.1",
     "prettier": "2.7.1",
-    "ts-jest": "^29.0.5"
+    "ts-jest": "29.4.6",
+    "typescript": "5.9.3"
+  },
+  "private": true,
+  "engines": {
+    "node": "24.x"
   }
 }
