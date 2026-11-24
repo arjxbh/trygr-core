@@ -85,3 +85,9 @@ Trygr supports individual on/off commands through the local [BRMesh Hub v1 REST 
 On the Mac mini, set the hub's hostname or IPv4 address with `bash ~/.local/share/trygr/set-secret.sh BRMESH_HUB_HOST`. If the hub has an admin password, save it with the same helper as `BRMESH_HUB_PASSWORD`. The firmware uses HTTP Basic authentication over plain HTTP, so use a trusted LAN.
 
 Run `curl -sS http://127.0.0.1:3333/brmesh` on the Mac. Use a light's returned `brmesh:<id>` as the `affectedDeviceId` of a trigger with action `turnOn` or `turnOff`. The reported state is the last state the hub requested. A physical light does not acknowledge the command.
+
+### Device dashboard
+
+Open the Mac mini's hostname on port 3334 from the home LAN. The dashboard shows cached devices, last known states, observation times and saved Trygrs. Refresh cache requests fresh Kasa and Ring observations. Older entries stay visible with their original timestamps when devices cannot be reached. Integrations that keep separate inventories appear only if they publish to the device cache.
+
+The dashboard listens on all IPv4 interfaces by default. Anyone with network access to this port can see the inventory and rules and request a refresh. Set `TRYGR_DASHBOARD_HOST` or `TRYGR_DASHBOARD_PORT` in the service environment to change the listener. The administrative API continues to use its separate listener.

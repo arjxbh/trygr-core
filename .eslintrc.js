@@ -4,6 +4,7 @@ module.exports = {
   extends: ['eslint:recommended'],
   parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
   overrides: [
+    { files: ['web/*.js'], env: { browser: true, node: false } },
     {
       files: ['*.ts'],
       parser: '@typescript-eslint/parser',

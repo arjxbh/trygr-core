@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Trygr · Device console</title>
+    <link rel="stylesheet" href="/dashboard.css" />
+    <script src="/dashboard.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap mast">
+        <a class="brand" href="/">Trygr<span aria-hidden="true">↗</span></a>
+        <nav aria-label="Dashboard sections">
+          <a href="#devices">Devices</a><a href="#trygrs">Trygrs</a>
+        </nav>
+      </div>
+    </header>
+    <main class="wrap">
+      <section id="devices" aria-labelledby="device-title">
+        <div class="section-head">
+          <h1 id="device-title">
+            Device cache<span class="count" id="device-count"></span>
+          </h1>
+          <button id="refresh" type="button">
+            <span aria-hidden="true">↻</span> Refresh cache
+          </button>
+        </div>
+        <p id="feedback" role="status"></p>
+        <div class="sheet">
+          <table>
+            <caption class="sr-only">
+              Cached devices and last known status
+            </caption>
+            <thead>
+              <tr>
+                <th>Device</th>
+                <th>Integration</th>
+                <th>Known status</th>
+                <th>Last seen</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <p id="device-message" class="message" role="status">
+            Loading devices…
+          </p>
+        </div>
+      </section>
+      <section id="trygrs" aria-labelledby="rule-title">
+        <div class="section-head">
+          <h2 id="rule-title">
+            Trygrs<span class="count" id="rule-count"></span>
+          </h2>
+        </div>
+        <div id="rules"></div>
+        <p id="rule-message" class="message" role="status">Loading rules…</p>
+      </section>
+    </main>
+  </body>
+</html>

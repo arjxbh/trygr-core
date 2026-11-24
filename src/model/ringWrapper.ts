@@ -7,6 +7,7 @@ export async function connectRing(
   cacheDevice: ExternalDeviceCache,
   onMotion: (cameraName: string, latitude?: number, longitude?: number) => void,
   onLocation?: (name: string, latitude: number, longitude: number) => void,
+  onReady?: (refresh: () => Promise<string>) => void,
 ) {
   const token = readSetting('RING_REFRESH_TOKEN');
   if (!token) return;
@@ -42,13 +43,28 @@ export async function connectRing(
         });
       }
     }
+    onReady?.(async () => {
+      const { allCameras } = await api.fetchRingDevices();
+      const cameras = await api.getCameras();
+      for (const data of allCameras) {
+        const camera = cameras.find((item) => item.id === data.id);
+        if (camera) {
+          camera.updateData(data);
+          await cacheDevice(formatCamera(camera));
+        }
+      }
+      for (const location of await api.getLocations())
+        for (const asset of location.assets ?? [])
+          await location.requestList('DeviceInfoDocGetList', asset.uuid);
+      return 'Cameras refreshed; sensor updates requested';
+    });
     console.info('Ring devices and cameras subscribed');
   } catch {
     rotation.unsubscribe();
     api.disconnect();
     console.error('Ring connection failed. Retrying in one minute.');
     setTimeout(
-      () => void connectRing(cacheDevice, onMotion, onLocation),
+      () => void connectRing(cacheDevice, onMotion, onLocation, onReady),
       60000,
     );
   }

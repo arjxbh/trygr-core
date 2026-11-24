@@ -31,7 +31,7 @@ export class DeviceCacheService {
     return JSON.parse(payload || '');
   }
 
-  async findKasaDevice(name: string): Promise<device | undefined> {
+  async listDevices(): Promise<device[]> {
     let cursor = '0';
     const matches = new Map<string, device>();
     do {
@@ -47,15 +47,26 @@ export class DeviceCacheService {
           continue;
         }
         if (
-          row?.vendor === 'kasa' &&
+          typeof row?.id === 'string' &&
           typeof row.name === 'string' &&
-          row.name.trim().toLowerCase() === name.trim().toLowerCase() &&
-          Date.now() - row.lastUpdated < 180000
+          typeof row.vendor === 'string'
         )
           matches.set(row.id, row);
       }
     } while (cursor !== '0');
-    if (matches.size === 1) return [...matches.values()][0];
+    return [...matches.values()].sort(
+      (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+    );
+  }
+
+  async findKasaDevice(name: string): Promise<device | undefined> {
+    const matches = (await this.listDevices()).filter(
+      (row) =>
+        row.vendor === 'kasa' &&
+        row.name.trim().toLowerCase() === name.trim().toLowerCase() &&
+        Date.now() - row.lastUpdated < 180000,
+    );
+    if (matches.length === 1) return matches[0];
   }
 
   async closeConnection() {

@@ -1,3 +1,4 @@
+import { startDashboard } from './service/dashboard';
 import { ZIPCODEBASE_API_KEY, ZIP_CODE, COUNTRY_CODE } from './config/env';
 import { connectRing } from './model/ringWrapper';
 import { MatterWrapper } from './model/matterWrapper';
@@ -57,6 +58,11 @@ void matter
   .start((id) => triggers.bindWalkway(id))
   .catch(() => console.error('Matter controller failed to start'));
 new ApiService(triggers);
+let refreshRing = async () => 'Connection unavailable';
+startDashboard(triggers, {
+  Kasa: () => kasa.refresh(),
+  Ring: () => refreshRing(),
+});
 void connectRing(
   (device) => deviceCache.updateDevice(device),
   (cameraName) =>
@@ -65,6 +71,9 @@ void connectRing(
       .catch(() => console.error('Motion action failed')),
   (name, lat, lon) => {
     if (name === 'Front Door') triggers.setSolarLocation(lat, lon);
+  },
+  (refresh) => {
+    refreshRing = refresh;
   },
 );
 async function enableWeather() {

@@ -50,41 +50,70 @@ export class KasaWrapper {
     );
     return JSON.parse(stdout);
   }
-  private async refreshModern() {
-    try {
-      const result = await this.modern([
-        'scan',
-        ...broadcastTargets().map((x) => x.host),
-      ]);
-      for (const row of result.records)
+  private async scanModern() {
+    const result = await this.modern([
+      'scan',
+      ...broadcastTargets().map((x) => x.host),
+    ]);
+    for (const row of result.records)
+      await this.cache.updateDevice({
+        ...row,
+        vendor: this.vendor,
+        protocol: 'smart',
+        lastUpdated: Date.now(),
+        hasBrightness: false,
+        hasVolume: false,
+        onACPower: true,
+        onTime: 0,
+      });
+    if (result.failed_networks)
+      console.warn(
+        'Kasa discovery networks unavailable:',
+        result.failed_networks,
+      );
+    if (result.locked)
+      console.warn(
+        'Kasa devices requiring account credentials:',
+        result.locked,
+      );
+    return result.failed_networks || result.locked
+      ? 'Some networks or devices were unavailable'
+      : 'Discovery complete';
+  }
+  private scan?: Promise<string>;
+  private refreshModern() {
+    return (this.scan ??= this.scanModern().finally(() => {
+      this.scan = undefined;
+    }));
+  }
+  async refresh() {
+    if (existsSync(this.python)) return this.refreshModern();
+    const results = await Promise.allSettled(
+      [...this.api.devices.values()].map(async (unit) => {
+        const on = await unit.getPowerState();
         await this.cache.updateDevice({
-          ...row,
-          vendor: this.vendor,
-          protocol: 'smart',
-          lastUpdated: Date.now(),
-          hasBrightness: false,
-          hasVolume: false,
-          onACPower: true,
-          onTime: 0,
+          ...this.describe(unit),
+          status: on ? 'on' : 'off',
         });
-      if (result.failed_networks)
-        console.warn(
-          'Kasa discovery networks unavailable:',
-          result.failed_networks,
-        );
-      if (result.locked)
-        console.warn(
-          'Kasa devices requiring account credentials:',
-          result.locked,
-        );
-    } catch {
-      console.error('Modern Kasa discovery failed');
-    } finally {
-      setTimeout(() => void this.refreshModern(), 60000);
-    }
+      }),
+    );
+    return results.some((r) => r.status === 'rejected')
+      ? 'Some devices were unavailable'
+      : 'Known legacy devices polled';
   }
   constructor(private readonly cache: DeviceCacheService) {
-    if (existsSync(this.python)) void this.refreshModern();
+    if (existsSync(this.python)) {
+      const poll = async () => {
+        try {
+          await this.refreshModern();
+        } catch {
+          console.error('Modern Kasa discovery failed');
+        } finally {
+          setTimeout(poll, 60000);
+        }
+      };
+      void poll();
+    }
     const record = (unit: Device) => {
       if (unit instanceof Plug || unit instanceof Bulb) {
         void cache

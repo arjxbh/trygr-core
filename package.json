@@ -9,9 +9,9 @@
     "build:compile": "tsc -p .",
     "build": "npm run clean && npm run build:compile",
     "start": "node dist/app.js",
-    "lint": "eslint --max-warnings=0 --ext .js,.ts src examples *.js .eslintrc.js && npm run format:check && for f in *.sh scripts/*.sh; do bash -n \"$f\" || exit 1; done",
-    "format": "prettier --write src examples *.js .eslintrc.js package.json tsconfig.json .prettierrc.json",
-    "format:check": "prettier --check src examples *.js .eslintrc.js package.json tsconfig.json .prettierrc.json",
+    "lint": "eslint --max-warnings=0 --ext .js,.ts src web examples *.js .eslintrc.js && npm run format:check && for f in *.sh scripts/*.sh; do bash -n \"$f\" || exit 1; done",
+    "format": "prettier --write src web examples *.js .eslintrc.js package.json tsconfig.json .prettierrc.json",
+    "format:check": "prettier --check src web examples *.js .eslintrc.js package.json tsconfig.json .prettierrc.json",
     "check": "npm run lint && npm run build && npm test",
     "deploy:mac": "bash scripts/deploy-mac.sh",
     "check:go": "cd go && test -z \"$(gofmt -l .)\" && go vet ./... && go test ./..."
