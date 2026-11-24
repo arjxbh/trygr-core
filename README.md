@@ -44,7 +44,7 @@ Settings live in owner-only files (0600) under `~/.config/trygr/secrets/` (0700)
 
 ## Adding another device type
 
-Start with the [application entry point](src/app.ts) and the [shared device record](src/interfaces/index.ts). An adapter maps vendor updates into that record and publishes them through the device cache. If it supports actions, register it with the [trigger service](src/service/triggerService.ts) alongside Kasa. Adapters that need credentials can use the [settings store](src/config/secrets.ts) with vendor-specific names and persist rotated tokens from the vendor SDK. The Nest and EcoFlow wrappers are available for further integration. The Go directory contains a partial implementation separate from the deployed TypeScript bridge.
+Start with the [application entry point](src/app.ts) and the [shared device record](src/interfaces/index.ts). An adapter maps vendor updates into that record and publishes them through the device cache. If it supports actions, register it with the [trigger service](src/service/triggerService.ts) alongside Kasa. Adapters that need credentials can use the [settings store](src/config/secrets.ts) with vendor-specific names and persist rotated tokens from the vendor SDK. The Nest wrapper is available for further integration. The Go directory contains a partial implementation separate from the deployed TypeScript bridge.
 
 
 Kasa discovery checks each IPv4 broadcast network, caches plugs and bulbs on first sight, and tracks each outlet on a power strip separately. The Mac installer also installs python-kasa in a private virtual environment for devices using TP-Link's authenticated protocol. Set `KASA_USERNAME` and `KASA_PASSWORD` using the release's `scripts/set-secret.sh` to resolve their names and control them.
@@ -71,3 +71,9 @@ bash ~/.local/share/trygr/matter.sh walkway 'matter:NODE:ENDPOINT'
 ```
 
 This updates the existing Front Door motion rule in place. The next nighttime motion turns on that endpoint and restarts its 15-minute timer. The same endpoint IDs can be used as `affectedDeviceId` in other on/off triggers.
+
+### EcoFlow battery monitoring
+
+Trygr reads the account's power stations through the signed EcoFlow HTTPS API. The station needs Wi-Fi and internet access. On the Mac, use the active release's `scripts/set-secret.sh` to save `ECOFLOW_ACCESS_KEY` and `ECOFLOW_SECRET_KEY` from the [EcoFlow developer portal](https://developer.ecoflow.com/). For keys issued by the European portal, also set `ECOFLOW_REGION` to `eu`.
+
+Query `GET /ecoflow` on the local API to see station names, models, online status, and available battery, solar/DC input and AC output readings. Requests share a 30-second cache. Missing measurements appear as null, and each input is reported separately when available. Output watts represent the entire AC circuit. This integration monitors the battery and does not switch its outputs.

@@ -6,6 +6,8 @@ import Logger from 'bunyan';
 import { TriggerService, type Trigger } from './triggerService';
 import { getLogger } from '../service/loggingService';
 
+import { EcoFlowWrapper } from '../model/ecoflowWrapper';
+
 const triggerSchema = joi.object<Trigger>({
   affectedDeviceId: joi
     .alternatives()
@@ -44,6 +46,12 @@ export class ApiService {
   }
 
   #createRoutes = () => {
+    const ecoflow = new EcoFlowWrapper();
+    this.router.get('/ecoflow', async (ctx) => {
+      const snapshot = await ecoflow.snapshot();
+      ctx.status = snapshot.status === 'ready' ? 200 : 503;
+      ctx.body = snapshot;
+    });
     this.router.get('/solar', (ctx) => {
       const solar = this.triggers.getSolarWindow();
       ctx.status = solar ? 200 : 503;
