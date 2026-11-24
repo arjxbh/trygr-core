@@ -1,3 +1,4 @@
+import { performBrmeshAction } from '../model/brmeshWrapper';
 import FSDB from 'file-system-db';
 import type { device } from '../interfaces';
 import { DeviceCacheService } from '../service/deviceCacheService';
@@ -231,6 +232,11 @@ export class TriggerService {
   }
 
   private async resolveAction(id: string) {
+    if (id.startsWith('brmesh:'))
+      return {
+        id,
+        perform: (action: string) => performBrmeshAction(id, action),
+      };
     const matter = this.matter;
     if (id.startsWith('matter:')) {
       if (matter)

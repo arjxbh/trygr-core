@@ -1,3 +1,4 @@
+import { brmeshTarget, listBrmesh } from '../model/brmeshWrapper';
 import koa from 'koa';
 import router from '@koa/router';
 import { koaBody } from 'koa-body';
@@ -13,6 +14,7 @@ const triggerSchema = joi.object<Trigger>({
     .alternatives()
     .try(
       joi.string().alphanum(),
+      joi.string().pattern(brmeshTarget),
       joi.string().pattern(/^matter:\d{1,20}:\d{1,5}$/),
       joi.string().pattern(/^kasa-name:.{1,100}$/),
     )
@@ -46,6 +48,19 @@ export class ApiService {
   }
 
   #createRoutes = () => {
+    this.router.get('/brmesh', async (ctx) => {
+      try {
+        ctx.body = { status: 'ready', lights: await listBrmesh() };
+      } catch (error) {
+        const status =
+          error instanceof Error &&
+          ['hub_required', 'invalid_hostname'].includes(error.message)
+            ? error.message
+            : 'hub_unavailable';
+        ctx.status = 503;
+        ctx.body = { status };
+      }
+    });
     const ecoflow = new EcoFlowWrapper();
     this.router.get('/ecoflow', async (ctx) => {
       const snapshot = await ecoflow.snapshot();

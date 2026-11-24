@@ -77,3 +77,11 @@ This updates the existing Front Door motion rule in place. The next nighttime mo
 Trygr reads the account's power stations through the signed EcoFlow HTTPS API. The station needs Wi-Fi and internet access. On the Mac, use the active release's `scripts/set-secret.sh` to save `ECOFLOW_ACCESS_KEY` and `ECOFLOW_SECRET_KEY` from the [EcoFlow developer portal](https://developer.ecoflow.com/). For keys issued by the European portal, also set `ECOFLOW_REGION` to `eu`.
 
 Query `GET /ecoflow` on the local API to see station names, models, online status, and available battery, solar/DC input and AC output readings. Requests share a 30-second cache. Missing measurements appear as null, and each input is reported separately when available. Output watts represent the entire AC circuit. This integration monitors the battery and does not switch its outputs.
+
+### BRmesh outdoor lights
+
+Trygr supports individual on/off commands through the local [BRMesh Hub v1 REST API](https://github.com/logichousepcb/brmesh-hub/blob/main/docs/API.md). This requires a compatible hub within Bluetooth range of the lights and reachable from the Mac. The BRmesh phone app alone does not provide this endpoint. Binding lights with a different mesh key can affect control from the phone. Follow the [hub setup instructions](https://github.com/logichousepcb/brmesh-hub) for an existing mesh before binding.
+
+On the Mac mini, set the hub's hostname or IPv4 address with `bash ~/.local/share/trygr/set-secret.sh BRMESH_HUB_HOST`. If the hub has an admin password, save it with the same helper as `BRMESH_HUB_PASSWORD`. The firmware uses HTTP Basic authentication over plain HTTP, so use a trusted LAN.
+
+Run `curl -sS http://127.0.0.1:3333/brmesh` on the Mac. Use a light's returned `brmesh:<id>` as the `affectedDeviceId` of a trigger with action `turnOn` or `turnOff`. The reported state is the last state the hub requested. A physical light does not acknowledge the command.
