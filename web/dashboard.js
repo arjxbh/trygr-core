@@ -20,6 +20,21 @@ async function devices() {
         const row = node('tr'),
           label = node('td', d.name || d.id);
         label.append(node('small', d.type));
+        if (
+          d.vendor === 'eufy' &&
+          d.mapUpdated &&
+          /^eufy:[a-f0-9]{64}$/.test(d.id)
+        ) {
+          const link = node('a', 'View map');
+          link.href = '/eufy/maps/' + d.id.slice(5);
+          label.append(
+            link,
+            node(
+              'small',
+              'Map received ' + new Date(d.mapUpdated).toLocaleString(),
+            ),
+          );
+        }
         const status = node('span', d.status || 'Unknown');
         status.className = 'state';
         if (['online', 'on', 'normal'].includes(d.status))
@@ -28,6 +43,8 @@ async function devices() {
           status.classList.add('fault');
         const cell = node('td');
         cell.append(status);
+        if (Number.isFinite(d.batteryPercent))
+          cell.append(node('small', d.batteryPercent + '% battery'));
         const stamp = new Date(d.lastUpdated);
         row.append(
           label,

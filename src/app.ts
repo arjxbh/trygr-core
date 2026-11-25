@@ -1,3 +1,4 @@
+import { EufyWrapper } from './model/eufyWrapper';
 import { startDashboard } from './service/dashboard';
 import { ZIPCODEBASE_API_KEY, ZIP_CODE, COUNTRY_CODE } from './config/env';
 import { connectRing } from './model/ringWrapper';
@@ -51,6 +52,17 @@ async function startWeather(triggers: TriggerService) {
 }
 
 const deviceCache = new DeviceCacheService();
+const eufy = new EufyWrapper(deviceCache);
+const pollEufy = async () => {
+  try {
+    await eufy.refresh();
+  } catch {
+    console.error('Eufy refresh failed');
+  } finally {
+    setTimeout(pollEufy, 15 * 60_000).unref();
+  }
+};
+void pollEufy();
 const kasa = new KasaWrapper(deviceCache);
 const matter = new MatterWrapper();
 const triggers = new TriggerService(deviceCache, [kasa], matter);
@@ -60,6 +72,7 @@ void matter
 new ApiService(triggers);
 let refreshRing = async () => 'Connection unavailable';
 startDashboard(triggers, {
+  Eufy: () => eufy.refresh(),
   Kasa: () => kasa.refresh(),
   Ring: () => refreshRing(),
 });

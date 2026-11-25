@@ -19,6 +19,8 @@ export interface device {
   name: string;
   hasBrightness: boolean;
   hasVolume: boolean;
+  batteryPercent?: number;
+  mapUpdated?: number;
   brightness?: number;
   volume?: number;
   vendor: string;

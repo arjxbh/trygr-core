@@ -15,6 +15,9 @@ node -e 'if(process.versions.node.split(".")[0] !== "24") throw Error("Node 24 r
 test "$(redis-cli ping)" = PONG
 if [[ ! -x "$base/kasa-env/bin/python" ]]; then python3 -m venv "$base/kasa-env"; fi
 "$base/kasa-env/bin/python" -m pip install --disable-pip-version-check 'python-kasa==0.12.0'
+"$base/kasa-env/bin/python" -m venv "$release/eufy-env"
+"$release/eufy-env/bin/python" -m pip install --disable-pip-version-check 'eufy-omni-cloud[map] @ https://github.com/adamg23/Eufy-Omni/archive/a5eeb4333b8a32ffd3cf04068277cb889acab7fe.zip' 'protobuf>=7.36.0,<8' Pillow
+"$release/eufy-env/bin/python" -c 'import eufy_omni_cloud.account, eufy_omni_cloud.maprender'
 npm ci --omit=dev --no-audit --no-fund
 node -e 'require("ring-client-api"); require("tplink-smarthome-api")'
 node - "$release" "$base" "$label" "$(command -v node)" > agent.json <<'JS'

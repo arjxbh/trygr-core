@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { eufyStateDir } from '../model/eufyWrapper';
 import Koa from 'koa';
 import Router from '@koa/router';
 import { readFileSync } from 'node:fs';
@@ -20,15 +22,36 @@ export function startDashboard(
       ctx.body = body;
     });
   }
+  router.get('/eufy/maps/:key', async (ctx) => {
+    if (!/^[a-f0-9]{64}$/.test(ctx.params.key)) ctx.throw(404);
+    try {
+      ctx.body = await readFile(join(eufyStateDir, ctx.params.key + '.png'));
+      ctx.type = 'image/png';
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') ctx.throw(404);
+      throw error;
+    }
+  });
   router.get('/devices', async (ctx) => {
     ctx.body = (await triggers.deviceCache.listDevices()).map(
-      ({ id, name, vendor, type, status, lastUpdated }) => ({
+      ({
         id,
         name,
         vendor,
         type,
         status,
         lastUpdated,
+        batteryPercent,
+        mapUpdated,
+      }) => ({
+        id,
+        name,
+        vendor,
+        type,
+        status,
+        lastUpdated,
+        batteryPercent,
+        mapUpdated,
       }),
     );
   });

@@ -91,3 +91,9 @@ Run `curl -sS http://127.0.0.1:3333/brmesh` on the Mac. Use a light's returned `
 Open the Mac mini's hostname on port 3334 from the home LAN. The dashboard shows cached devices, last known states, observation times and saved Trygrs. Refresh cache requests fresh Kasa and Ring observations. Older entries stay visible with their original timestamps when devices cannot be reached. Integrations that keep separate inventories appear only if they publish to the device cache.
 
 The dashboard listens on all IPv4 interfaces by default. Anyone with network access to this port can see the inventory and rules and request a refresh. Set `TRYGR_DASHBOARD_HOST` or `TRYGR_DASHBOARD_PORT` in the service environment to change the listener. The administrative API continues to use its separate listener.
+
+### Eufy X10 Pro Omni
+
+Save `EUFY_USERNAME` (the account email) and `EUFY_PASSWORD` with the Mac's `~/.local/share/trygr/set-secret.sh` helper, then use **Refresh cache** in the dashboard. Trygr also checks at startup and every 15 minutes. The read-only adapter uses the [Eufy Omni community client](https://github.com/adamg23/Eufy-Omni) for cloud discovery and the active map stream. It shows T2351 vacuums, battery percentage, and cleaning status.
+
+**View map** opens the last received floor plan. The map timestamp remains visible when the robot supplies only status. Private session files and map PNGs are stored under `~/.local/share/trygr/state/eufy` outside releases. Anyone with access to the LAN dashboard can view the saved map. This integration requires Python 3.13+ and internet access from the Mac.
